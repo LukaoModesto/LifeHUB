@@ -1,0 +1,23 @@
+# Ambiente virtual Python
+.venv/
+venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Banco de dados local
+lifehub.db
+*.db
+
+# Variáveis de ambiente / senhas
+.env
+
+# VS Code
+.vscode/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
