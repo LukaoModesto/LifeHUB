@@ -2,7 +2,9 @@ from fastapi import FastAPI
 
 from app.database import Base, engine
 from app.models.user_model import User
+from app.models.event_model import Event
 from app.routes.user_routes import router as user_router
+from app.routes.event_routes import router as event_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -13,6 +15,7 @@ app = FastAPI(
 )
 
 app.include_router(user_router)
+app.include_router(event_router)
 
 
 @app.get("/")
