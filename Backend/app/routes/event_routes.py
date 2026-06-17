@@ -4,8 +4,14 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.database import get_db
 from app.models.user_model import User
-from app.schemas.event_schema import EventCreate, EventResponse
-from app.services.event_services import create_event, get_user_events
+from app.schemas.event_schema import EventCreate, EventResponse, EventUpdate
+from app.services.event_services import (
+    create_event,
+    get_user_events,
+    get_event_by_id,
+    update_event,
+    delete_event
+)
 
 
 router = APIRouter(
@@ -29,3 +35,31 @@ def list_events(
     current_user: User = Depends(get_current_user)
 ):
     return get_user_events(db, current_user)
+
+
+@router.get("/{event_id}", response_model=EventResponse)
+def get_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return get_event_by_id(db, event_id, current_user)
+
+
+@router.put("/{event_id}", response_model=EventResponse)
+def edit_event(
+    event_id: int,
+    event_data: EventUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return update_event(db, event_id, event_data, current_user)
+
+
+@router.delete("/{event_id}")
+def remove_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return delete_event(db, event_id, current_user)
