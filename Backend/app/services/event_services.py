@@ -1,5 +1,7 @@
+from datetime import date
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
 
 from app.models.event_model import Event
 from app.models.user_model import User
@@ -23,10 +25,39 @@ def create_event(db: Session, event_data: EventCreate, current_user: User):
     return new_event
 
 
-def get_user_events(db: Session, current_user: User):
-    return db.query(Event).filter(Event.user_id == current_user.id).all()
+def get_user_events(
+        db: Session, 
+        current_user: User,
+        event_date: date | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None
+        ):
+    query = db.query(Event).filter(Event.user_id == current_user.id)
 
+    if event_date:
+        query = query.filter(Event.event_date == event_date)
 
+    if start_date and end_date:
+        if end_date < start_date:
+            raise HTTPException(
+                status_code=400,
+                detail="A data final não pode ser menor que a data inicial."
+            )
+        
+        query = query.filter(
+            Event.event_date >= start_date,
+            Event.event_date <= end_date
+            )
+        
+    elif start_date:
+        query = query.filter(Event.event_date >= start_date)
+
+    elif end_date:
+        query = query.filter(Event.event_date <= end_date)
+
+    return query.order_by(Event.event_date, Event.start_time).all()
+
+       
 def get_event_by_id(db: Session, event_id: int, current_user: User):
     event = db.query(Event).filter(
         Event.id == event_id,

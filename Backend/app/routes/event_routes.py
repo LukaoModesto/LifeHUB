@@ -12,7 +12,7 @@ from app.services.event_services import (
     update_event,
     delete_event
 )
-
+from datetime import date
 
 router = APIRouter(
     prefix="/events",
@@ -31,10 +31,19 @@ def register_event(
 
 @router.get("/", response_model=list[EventResponse])
 def list_events(
+    event_date: date | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return get_user_events(db, current_user)
+    return get_user_events(
+        db, 
+        current_user,
+        event_date,
+        start_date,
+        end_date
+    )
 
 
 @router.get("/{event_id}", response_model=EventResponse)
