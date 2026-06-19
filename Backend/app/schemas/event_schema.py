@@ -1,5 +1,5 @@
 from datetime import date, time
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class EventCreate(BaseModel):
@@ -32,6 +32,13 @@ class EventCreate(BaseModel):
             return None
 
         return value
+    
+    @model_validator(mode="after")
+    def validate_event_time(self):
+        if self.end_time is not None and self.end_time <= self.start_time:
+            raise ValueError ("O horário final deve ser maiso que o horário incial.")
+        
+        return self
 
 class EventUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=2, max_length=100)
@@ -66,6 +73,17 @@ class EventUpdate(BaseModel):
             return None
 
         return value
+    
+    @model_validator(mode="after")
+    def validate_time_event(self):
+        if (
+            self.start_time is not None
+            and self.end_time is not None
+            and self.end_time <= self.start_time
+        ):
+            raise ValueError ("O horário final deve ser maior que o horário inicial.")
+        
+        return self
 
 class EventResponse(BaseModel):
     id: int
