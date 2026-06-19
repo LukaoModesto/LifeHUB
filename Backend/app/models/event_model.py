@@ -22,3 +22,8 @@ class Event(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")
+    reminders = relationship(
+        "EventReminder",
+        back_populates="event",
+        cascade="all, delete-orphan"
+    )
