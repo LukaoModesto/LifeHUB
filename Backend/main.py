@@ -6,11 +6,14 @@ from app.models.user_model import User
 from app.models.event_model import Event
 from app.models.reminder_model import EventReminder
 from app.models.goal_model import Goal
+from app.models.activity_session_model import ActivitySession
 
 from app.routes.user_routes import router as user_router
 from app.routes.event_routes import router as event_router
 from app.routes.reminder_routes import router as reminder_router
 from app.routes.goal_routes import router as goal_router
+from app.routes.activity_session_routes import router as activity_session_router
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -20,10 +23,12 @@ app = FastAPI(
     version="0.1.0"
 )
 
+
 app.include_router(user_router)
 app.include_router(event_router)
 app.include_router(reminder_router)
 app.include_router(goal_router)
+app.include_router(activity_session_router)
 
 
 @app.get("/")
