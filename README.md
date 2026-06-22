@@ -1,34 +1,25 @@
 # LifeHUB
 
-LifeHUB is a personal productivity application focused on time organization, calendar management, goals, reminders and activity tracking.
+LifeHUB is a productivity and organization application focused on events, reminders, goals and time tracking.
 
-The project is being developed as a full-stack study and portfolio project, using a Python backend with FastAPI and a mobile/web interface planned for future versions.
+The main goal of the project is to help users organize important events with dates, times and customizable reminders. The application is being developed incrementally, with new features being added through versioned releases.
 
-## Project Status
+## Current Status
 
-The project is currently in early development.
+The backend is currently under development and already includes:
 
-Current features:
+* User registration
+* User login with JWT authentication
+* Protected user route
+* Event management
+* Event reminders
+* Reminder engine
+* Goals management
+* Activity sessions
 
-* FastAPI backend structure
-* SQLite database configuration
-* User model
-* User registration endpoint
-* Password hashing
-* Interactive API documentation with Swagger
+The project is being built as a real-world full stack application, with a focus on clean architecture, security, version control and future frontend/PWA integration.
 
-## Main Features Planned
-
-* User registration and login
-* Calendar and event management
-* Custom reminders
-* Goals based on target hours
-* Activity timer
-* Productivity dashboard
-* Statistics and progress tracking
-* Mobile/PWA interface
-
-## Technologies
+## Tech Stack
 
 ### Backend
 
@@ -36,121 +27,251 @@ Current features:
 * FastAPI
 * SQLAlchemy
 * SQLite
-* Passlib
-* Bcrypt
-
-### Future Technologies
-
-* PostgreSQL
 * JWT Authentication
-* Flutter or PWA frontend
-* Firebase Cloud Messaging for notifications
+* Pydantic
+* Uvicorn
+
+### Future Frontend
+
+* PWA
+* Responsive web interface
+* Event and reminder management screens
+* Browser notifications
 
 ## Project Structure
 
 ```text
 LifeHUB/
-│
-├── Backend/
-│   ├── app/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   ├── database.py
-│   │   └── main.py
-│   │
-│   └── main.py
-│
+├── backend/
+│   ├── main.py
+│   └── app/
+│       ├── core/
+│       ├── models/
+│       ├── routes/
+│       ├── schemas/
+│       ├── services/
+│       ├── database.py
+│       └── main.py
 ├── README.md
+├── CHANGELOG.md
 └── .gitignore
 ```
 
-## API Endpoints
+## Main Features
+
+### Authentication
+
+* User registration
+* User login
+* JWT access token
+* Protected routes
+
+### Events
+
+* Create events
+* List events
+* Search event by ID
+* Update events
+* Delete events
+* Filter events by date
+* Validate event start and end time
+
+### Event Reminders
+
+* Create reminders for events
+* List event reminders
+* Delete reminders
+* Prevent duplicate reminders
+* Validate reminder time
+
+### Reminder Engine
+
+The reminder engine checks which reminders are currently due.
+
+It returns reminder information such as:
+
+* Event title
+* Event date and time
+* Reminder time
+* Minutes before event
+* Notification level
+* Sound type
+
+Current notification behavior:
+
+```text
+24 hours before → normal notification
+12 hours before → normal notification
+6 hours before  → normal notification
+2 hours before  → alert notification
+Less than 2h    → alert notification
+```
+
+### Goals
+
+* Create goals
+* List goals
+* Update goals
+* Delete goals
+* Define target hours
+* Define goal period: daily, weekly or monthly
+
+### Activity Sessions
+
+* Create activity sessions
+* Link sessions to goals
+* List sessions
+* Update sessions
+* Delete sessions
+* Validate session start and end time
+
+## API Routes
 
 ### Users
 
-#### Register User
-
-```http
+```text
 POST /users/register
+POST /users/login
+GET  /users/me
+GET  /users/
 ```
 
-Example request:
+### Events
 
-```json
-{
-  "name": "Lucas Andrade",
-  "email": "lucas@example.com",
-  "password": "123456"
-}
+```text
+POST   /events/
+GET    /events/
+GET    /events/{event_id}
+PUT    /events/{event_id}
+DELETE /events/{event_id}
 ```
 
-Example response:
+### Event Reminders
 
-```json
-{
-  "id": 1,
-  "name": "Lucas Andrade",
-  "email": "lucas@example.com"
-}
+```text
+POST   /events/{event_id}/reminders/
+GET    /events/{event_id}/reminders/
+DELETE /events/{event_id}/reminders/{reminder_id}
+```
+
+### Reminder Engine
+
+```text
+GET   /reminders/due
+PATCH /reminders/{reminder_id}/sent
+```
+
+### Goals
+
+```text
+POST   /goals/
+GET    /goals/
+GET    /goals/{goal_id}
+PUT    /goals/{goal_id}
+DELETE /goals/{goal_id}
+```
+
+### Activity Sessions
+
+```text
+POST   /activity-sessions/
+GET    /activity-sessions/
+GET    /activity-sessions/{session_id}
+PUT    /activity-sessions/{session_id}
+DELETE /activity-sessions/{session_id}
 ```
 
 ## How to Run the Project
 
-### 1. Clone the repository
+Clone the repository:
 
 ```bash
 git clone https://github.com/LukaoModesto/LifeHUB.git
 ```
 
-### 2. Access the project folder
+Enter the project folder:
 
 ```bash
 cd LifeHUB
 ```
 
-### 3. Create a virtual environment
+Enter the backend folder:
+
+```bash
+cd backend
+```
+
+Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
 ```
 
-### 4. Activate the virtual environment
-
-Windows:
+On Windows:
 
 ```bash
 .venv\Scripts\activate
 ```
 
-### 5. Install dependencies
+Install dependencies:
 
 ```bash
-python -m pip install fastapi uvicorn sqlalchemy psycopg2-binary python-jose passlib[bcrypt] email-validator bcrypt==4.0.1
+pip install -r requirements.txt
 ```
 
-### 6. Run the backend server
+Run the backend:
 
 ```bash
-cd Backend
 python -m uvicorn main:app --reload
 ```
 
-### 7. Open the API documentation
+Open the API documentation:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-## Next Steps
+## Environment Variables
 
-* Add user listing endpoint
-* Add duplicate email validation
-* Create login endpoint
-* Implement JWT authentication
-* Create event/calendar models
-* Create goals and activity tracking models
+Create a `.env` file in the project root based on `.env.example`.
+
+Example:
+
+```env
+SECRET_KEY=change_this_secret_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+```
+
+Sensitive files such as `.env`, local databases and virtual environments must not be committed.
+
+## Development Roadmap
+
+### MVP
+
+* Authentication
+* Event management
+* Event reminders
+* Reminder engine
+* Basic frontend/PWA
+* Browser notifications
+
+### Future Releases
+
+* Custom notification priority
+* Custom notification sounds
+* Shared events
+* Group notifications
+* Team and company events
+* User feedback/report system
+* Goal progress dashboard
+* Mobile app version
+
+## Product Vision
+
+LifeHUB started as a personal agenda and reminder application, but the long-term vision is to evolve it into a productivity platform for individuals, groups and teams.
+
+Future versions may support shared events, group reminders, team notifications and company-level organization features.
 
 ## Author
 
