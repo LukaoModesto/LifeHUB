@@ -12,6 +12,8 @@ class EventReminder(Base):
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
     minutes_before = Column(Integer, nullable=False)
 
+    sent_at = Column(DateTime, nullable=True)
+
     create_at = Column(DateTime, default=datetime.utcnow)
 
     event = relationship("Event", back_populates="reminders")
