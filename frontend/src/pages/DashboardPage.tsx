@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -28,6 +28,11 @@ import {
   type LifeHubEvent,
 } from "../services/eventService";
 import { createEventReminder } from "../services/reminderService";
+import {
+  getDueReminders,
+  markReminderAsSent,
+  type DueReminder,
+} from "../services/dueReminderService";
 
 type User = {
   id: number;
@@ -96,9 +101,14 @@ function DashboardPage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<LifeHubEvent[]>([]);
+  const [dueReminders, setDueReminders] = useState<DueReminder[]>([]);
+
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
+  const [isDueRemindersLoading, setIsDueRemindersLoading] = useState(true);
+
   const [eventsErrorMessage, setEventsErrorMessage] = useState("");
+  const [dueRemindersErrorMessage, setDueRemindersErrorMessage] = useState("");
 
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState("");
@@ -131,7 +141,7 @@ function DashboardPage() {
         setIsUserLoading(false);
       }
 
-      await loadEvents();
+      await Promise.all([loadEvents(), loadDueReminders()]);
     }
 
     loadDashboardData();
@@ -151,7 +161,21 @@ function DashboardPage() {
     }
   }
 
-  async function handleCreateEvent(event: React.FormEvent<HTMLFormElement>) {
+  async function loadDueReminders() {
+    setIsDueRemindersLoading(true);
+    setDueRemindersErrorMessage("");
+
+    try {
+      const remindersData = await getDueReminders();
+      setDueReminders(remindersData);
+    } catch {
+      setDueRemindersErrorMessage("Não foi possível carregar os lembretes.");
+    } finally {
+      setIsDueRemindersLoading(false);
+    }
+  }
+
+  async function handleCreateEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setCreateEventErrorMessage("");
@@ -206,7 +230,7 @@ function DashboardPage() {
     }
   }
 
-  async function handleCreateReminder(event: React.FormEvent<HTMLFormElement>) {
+  async function handleCreateReminder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setCreateReminderErrorMessage("");
@@ -246,6 +270,7 @@ function DashboardPage() {
       setTimeout(() => {
         setSelectedEventForReminder(null);
         setCreateReminderSuccessMessage("");
+        loadDueReminders();
       }, 700);
     } catch {
       setCreateReminderErrorMessage(
@@ -253,6 +278,22 @@ function DashboardPage() {
       );
     } finally {
       setIsCreatingReminder(false);
+    }
+  }
+
+  async function handleMarkReminderAsSent(reminderId: number) {
+    try {
+      await markReminderAsSent(reminderId);
+
+      setDueReminders((currentReminders) =>
+        currentReminders.filter(
+          (reminder) => reminder.reminder_id !== reminderId
+        )
+      );
+    } catch {
+      setDueRemindersErrorMessage(
+        "Não foi possível marcar o lembrete como visto."
+      );
     }
   }
 
@@ -285,6 +326,10 @@ function DashboardPage() {
 
     return new Date(firstDate).getTime() - new Date(secondDate).getTime();
   });
+
+  const alertRemindersCount = dueReminders.filter(
+    (reminder) => reminder.notification_level === "alert"
+  ).length;
 
   return (
     <main className="min-h-screen bg-[#f8fafc] text-slate-900">
@@ -365,7 +410,9 @@ function DashboardPage() {
 
                 <button className="relative rounded-2xl border border-slate-200 bg-white p-3 text-slate-600 transition hover:bg-slate-50">
                   <Bell size={20} />
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+                  {dueReminders.length > 0 && (
+                    <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+                  )}
                 </button>
 
                 <button
@@ -518,20 +565,51 @@ function DashboardPage() {
                     <h3 className="text-xl font-bold">Notificações</h3>
                   </div>
 
-                  <button className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+                  <button
+                    type="button"
+                    onClick={loadDueReminders}
+                    className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    title="Atualizar lembretes"
+                  >
                     <Settings size={18} />
                   </button>
                 </div>
 
-                <NotificationGroup title="Hoje">
-                  <NotificationCard
-                    title="Motor de lembretes"
-                    description="Crie lembretes pelos eventos da agenda."
-                    time="Agora"
-                    color="primary"
-                    icon="bell"
-                  />
-                </NotificationGroup>
+                {isDueRemindersLoading && (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
+                    Carregando lembretes...
+                  </div>
+                )}
+
+                {!isDueRemindersLoading && dueRemindersErrorMessage && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-600">
+                    {dueRemindersErrorMessage}
+                  </div>
+                )}
+
+                {!isDueRemindersLoading &&
+                  !dueRemindersErrorMessage &&
+                  dueReminders.length === 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
+                      Nenhum lembrete pendente no momento.
+                    </div>
+                  )}
+
+                {!isDueRemindersLoading &&
+                  !dueRemindersErrorMessage &&
+                  dueReminders.length > 0 && (
+                    <NotificationGroup title="Agora">
+                      {dueReminders.map((reminder) => (
+                        <DueReminderCard
+                          key={reminder.reminder_id}
+                          reminder={reminder}
+                          onMarkAsSeen={() =>
+                            handleMarkReminderAsSent(reminder.reminder_id)
+                          }
+                        />
+                      ))}
+                    </NotificationGroup>
+                  )}
               </motion.section>
 
               <motion.section
@@ -551,8 +629,14 @@ function DashboardPage() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <SummaryCard label="Eventos" value={String(events.length)} />
-                  <SummaryCard label="Lembretes" value="-" />
-                  <SummaryCard label="Alertas" value="-" />
+                  <SummaryCard
+                    label="Lembretes"
+                    value={String(dueReminders.length)}
+                  />
+                  <SummaryCard
+                    label="Alertas"
+                    value={String(alertRemindersCount)}
+                  />
                 </div>
               </motion.section>
             </aside>
@@ -595,6 +679,63 @@ function DashboardPage() {
   );
 }
 
+function DueReminderCard({
+  reminder,
+  onMarkAsSeen,
+}: {
+  reminder: DueReminder;
+  onMarkAsSeen: () => void;
+}) {
+  const isAlert = reminder.notification_level === "alert";
+
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      className={`rounded-2xl border p-4 shadow-sm transition hover:shadow-md ${
+        isAlert ? "border-red-200 bg-red-50" : "border-slate-200 bg-white"
+      }`}
+    >
+      <div className="flex items-start gap-4">
+        <IconBadge color={isAlert ? "danger" : "primary"} icon="bell" />
+
+        <div className="flex-1">
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <h4 className="font-bold text-slate-900">
+              {reminder.event_title}
+            </h4>
+
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                isAlert
+                  ? "bg-red-100 text-red-600"
+                  : "bg-indigo-100 text-indigo-600"
+              }`}
+            >
+              {isAlert ? "Alerta" : "Normal"}
+            </span>
+          </div>
+
+          <p className="text-sm text-slate-500">
+            Evento em {formatDateTime(reminder.event_datetime)}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-400">
+            Aviso configurado para {reminder.minutes_before} min antes.
+          </p>
+
+          <button
+            type="button"
+            onClick={onMarkAsSeen}
+            className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-600"
+          >
+            Marcar como visto
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function CreateEventModal({
   title,
   description,
@@ -624,7 +765,7 @@ function CreateEventModal({
   onStartTimeChange: (value: string) => void;
   onEndTimeChange: (value: string) => void;
   onClose: () => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-5 backdrop-blur-sm">
@@ -772,7 +913,7 @@ function CreateReminderModal({
   isLoading: boolean;
   onMinutesBeforeChange: (value: string) => void;
   onClose: () => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-5 backdrop-blur-sm">
@@ -826,10 +967,26 @@ function CreateReminderModal({
           </div>
 
           <div className="grid grid-cols-4 gap-2">
-            <QuickReminderButton label="15m" value="15" onClick={onMinutesBeforeChange} />
-            <QuickReminderButton label="1h" value="60" onClick={onMinutesBeforeChange} />
-            <QuickReminderButton label="2h" value="120" onClick={onMinutesBeforeChange} />
-            <QuickReminderButton label="1d" value="1440" onClick={onMinutesBeforeChange} />
+            <QuickReminderButton
+              label="15m"
+              value="15"
+              onClick={onMinutesBeforeChange}
+            />
+            <QuickReminderButton
+              label="1h"
+              value="60"
+              onClick={onMinutesBeforeChange}
+            />
+            <QuickReminderButton
+              label="2h"
+              value="120"
+              onClick={onMinutesBeforeChange}
+            />
+            <QuickReminderButton
+              label="1d"
+              value="1440"
+              onClick={onMinutesBeforeChange}
+            />
           </div>
 
           {errorMessage && (
@@ -1041,36 +1198,6 @@ function NotificationGroup({
   );
 }
 
-function NotificationCard({
-  title,
-  description,
-  time,
-  color,
-  icon,
-}: {
-  title: string;
-  description: string;
-  time: string;
-  color: "primary" | "success" | "danger" | "neutral";
-  icon: "calendar" | "check" | "bell";
-}) {
-  return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-    >
-      <IconBadge color={color} icon={icon} />
-
-      <div className="flex-1">
-        <h4 className="font-bold text-slate-900">{title}</h4>
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
-      </div>
-
-      <span className="text-sm font-semibold text-slate-500">{time}</span>
-    </motion.div>
-  );
-}
-
 function IconBadge({
   color,
   icon,
@@ -1138,6 +1265,18 @@ function formatDate(date: string) {
   const [year, month, day] = date.split("-");
 
   return `${day}/${month}/${year}`;
+}
+
+function formatDateTime(dateTime: string) {
+  const date = new Date(dateTime);
+
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function getEventCardColor(index: number): EventCardColor {
