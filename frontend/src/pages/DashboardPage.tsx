@@ -1,0 +1,1149 @@
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Bell,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  FileText,
+  Grid2X2,
+  Home,
+  LogOut,
+  Menu,
+  Plus,
+  Search,
+  Settings,
+  X,
+} from "lucide-react";
+
+import { api } from "../services/api";
+import {
+  createEvent,
+  getEvents,
+  type CreateEventData,
+  type LifeHubEvent,
+} from "../services/eventService";
+import { createEventReminder } from "../services/reminderService";
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+type CalendarDotColor = "primary" | "success" | "danger";
+
+type CalendarDayItem = {
+  day: number;
+  muted?: boolean;
+  selected?: boolean;
+  dot?: CalendarDotColor;
+};
+
+type EventCardColor = "primary" | "success" | "danger";
+
+const calendarDays: CalendarDayItem[] = [
+  { day: 26, muted: true },
+  { day: 27, muted: true },
+  { day: 28, muted: true },
+  { day: 29, muted: true },
+  { day: 30, muted: true },
+  { day: 31, muted: true },
+  { day: 1 },
+  { day: 2 },
+  { day: 3 },
+  { day: 4 },
+  { day: 5 },
+  { day: 6 },
+  { day: 7 },
+  { day: 8 },
+  { day: 9 },
+  { day: 10 },
+  { day: 11 },
+  { day: 12, selected: true },
+  { day: 13 },
+  { day: 14 },
+  { day: 15 },
+  { day: 16 },
+  { day: 17 },
+  { day: 18 },
+  { day: 19 },
+  { day: 20, dot: "primary" },
+  { day: 21 },
+  { day: 22 },
+  { day: 23, dot: "danger" },
+  { day: 24 },
+  { day: 25, dot: "success" },
+  { day: 26 },
+  { day: 27 },
+  { day: 28 },
+  { day: 29 },
+  { day: 30 },
+  { day: 1, muted: true },
+  { day: 2, muted: true },
+  { day: 3, muted: true },
+  { day: 4, muted: true },
+  { day: 5, muted: true },
+  { day: 6, muted: true },
+];
+
+function DashboardPage() {
+  const navigate = useNavigate();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [events, setEvents] = useState<LifeHubEvent[]>([]);
+  const [isUserLoading, setIsUserLoading] = useState(true);
+  const [isEventsLoading, setIsEventsLoading] = useState(true);
+  const [eventsErrorMessage, setEventsErrorMessage] = useState("");
+
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventDescription, setNewEventDescription] = useState("");
+  const [newEventDate, setNewEventDate] = useState("");
+  const [newEventStartTime, setNewEventStartTime] = useState("");
+  const [newEventEndTime, setNewEventEndTime] = useState("");
+  const [createEventErrorMessage, setCreateEventErrorMessage] = useState("");
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+
+  const [selectedEventForReminder, setSelectedEventForReminder] =
+    useState<LifeHubEvent | null>(null);
+  const [reminderMinutesBefore, setReminderMinutesBefore] = useState("15");
+  const [createReminderErrorMessage, setCreateReminderErrorMessage] =
+    useState("");
+  const [createReminderSuccessMessage, setCreateReminderSuccessMessage] =
+    useState("");
+  const [isCreatingReminder, setIsCreatingReminder] = useState(false);
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        const userResponse = await api.get<User>("/users/me");
+        setUser(userResponse.data);
+      } catch {
+        localStorage.removeItem("lifehub_token");
+        navigate("/login");
+        return;
+      } finally {
+        setIsUserLoading(false);
+      }
+
+      await loadEvents();
+    }
+
+    loadDashboardData();
+  }, [navigate]);
+
+  async function loadEvents() {
+    setIsEventsLoading(true);
+    setEventsErrorMessage("");
+
+    try {
+      const eventsData = await getEvents();
+      setEvents(eventsData);
+    } catch {
+      setEventsErrorMessage("Não foi possível carregar seus eventos.");
+    } finally {
+      setIsEventsLoading(false);
+    }
+  }
+
+  async function handleCreateEvent(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setCreateEventErrorMessage("");
+
+    if (!newEventTitle.trim()) {
+      setCreateEventErrorMessage("O título do evento é obrigatório.");
+      return;
+    }
+
+    if (!newEventDate) {
+      setCreateEventErrorMessage("A data do evento é obrigatória.");
+      return;
+    }
+
+    if (!newEventStartTime) {
+      setCreateEventErrorMessage("O horário de início é obrigatório.");
+      return;
+    }
+
+    if (newEventEndTime && newEventEndTime <= newEventStartTime) {
+      setCreateEventErrorMessage(
+        "O horário de término deve ser maior que o horário de início."
+      );
+      return;
+    }
+
+    const eventData: CreateEventData = {
+      title: newEventTitle.trim(),
+      description: newEventDescription.trim() || null,
+      event_date: newEventDate,
+      start_time: newEventStartTime,
+      end_time: newEventEndTime || null,
+    };
+
+    setIsCreatingEvent(true);
+
+    try {
+      const createdEvent = await createEvent(eventData);
+
+      setEvents((currentEvents) => [...currentEvents, createdEvent]);
+
+      setNewEventTitle("");
+      setNewEventDescription("");
+      setNewEventDate("");
+      setNewEventStartTime("");
+      setNewEventEndTime("");
+      setIsCreateEventModalOpen(false);
+    } catch {
+      setCreateEventErrorMessage("Não foi possível criar o evento.");
+    } finally {
+      setIsCreatingEvent(false);
+    }
+  }
+
+  async function handleCreateReminder(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setCreateReminderErrorMessage("");
+    setCreateReminderSuccessMessage("");
+
+    if (!selectedEventForReminder) {
+      setCreateReminderErrorMessage("Nenhum evento selecionado.");
+      return;
+    }
+
+    const minutesBefore = Number(reminderMinutesBefore);
+
+    if (!Number.isInteger(minutesBefore) || minutesBefore <= 0) {
+      setCreateReminderErrorMessage(
+        "Informe uma quantidade válida de minutos."
+      );
+      return;
+    }
+
+    if (minutesBefore > 43200) {
+      setCreateReminderErrorMessage(
+        "O lembrete não pode ultrapassar 30 dias antes do evento."
+      );
+      return;
+    }
+
+    setIsCreatingReminder(true);
+
+    try {
+      await createEventReminder(selectedEventForReminder.id, {
+        minutes_before: minutesBefore,
+      });
+
+      setCreateReminderSuccessMessage("Lembrete criado com sucesso.");
+      setReminderMinutesBefore("15");
+
+      setTimeout(() => {
+        setSelectedEventForReminder(null);
+        setCreateReminderSuccessMessage("");
+      }, 700);
+    } catch {
+      setCreateReminderErrorMessage(
+        "Não foi possível criar o lembrete. Verifique se ele já existe para este evento."
+      );
+    } finally {
+      setIsCreatingReminder(false);
+    }
+  }
+
+  function openReminderModal(event: LifeHubEvent) {
+    setSelectedEventForReminder(event);
+    setReminderMinutesBefore("15");
+    setCreateReminderErrorMessage("");
+    setCreateReminderSuccessMessage("");
+  }
+
+  function closeReminderModal() {
+    setSelectedEventForReminder(null);
+    setReminderMinutesBefore("15");
+    setCreateReminderErrorMessage("");
+    setCreateReminderSuccessMessage("");
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("lifehub_token");
+    navigate("/login");
+  }
+
+  const userName = user?.name ?? "Usuário";
+  const userEmail = user?.email ?? "Conta LifeHUB";
+  const userInitials = getUserInitials(userName);
+
+  const upcomingEvents = [...events].sort((firstEvent, secondEvent) => {
+    const firstDate = `${firstEvent.event_date}T${firstEvent.start_time}`;
+    const secondDate = `${secondEvent.event_date}T${secondEvent.start_time}`;
+
+    return new Date(firstDate).getTime() - new Date(secondDate).getTime();
+  });
+
+  return (
+    <main className="min-h-screen bg-[#f8fafc] text-slate-900">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-72 border-r border-slate-200 bg-white px-5 py-6 xl:block">
+          <div className="mb-10 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+              <CalendarDays size={22} />
+            </div>
+
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">LifeHUB</h1>
+              <p className="text-xs font-medium text-slate-400">
+                Agenda inteligente
+              </p>
+            </div>
+          </div>
+
+          <nav className="space-y-2">
+            <SidebarItem icon={<Home size={18} />} label="Início" />
+            <SidebarItem icon={<Grid2X2 size={18} />} label="Dashboard" />
+            <SidebarItem
+              icon={<CalendarDays size={18} />}
+              label="Calendário"
+              active
+            />
+            <SidebarItem icon={<CheckCircle2 size={18} />} label="Tarefas" />
+            <SidebarItem icon={<Bell size={18} />} label="Notificações" />
+            <SidebarItem icon={<FileText size={18} />} label="Documentos" />
+            <SidebarItem icon={<Settings size={18} />} label="Configurações" />
+          </nav>
+
+          <div className="mt-12 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+              <CalendarDays size={24} />
+            </div>
+
+            <p className="text-center text-sm leading-6 text-slate-500">
+              Organize seu dia e mantenha sua rotina sob controle.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setIsCreateEventModalOpen(true)}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
+            >
+              <Plus size={17} />
+              Novo evento
+            </button>
+          </div>
+        </aside>
+
+        <section className="flex-1">
+          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/85 px-5 py-4 backdrop-blur-xl lg:px-8">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 xl:hidden">
+                <button className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-600">
+                  <Menu size={20} />
+                </button>
+
+                <div>
+                  <h1 className="font-bold">LifeHUB</h1>
+                  <p className="text-xs text-slate-400">Calendário</p>
+                </div>
+              </div>
+
+              <div className="hidden items-center gap-8 xl:flex">
+                <TopNavItem label="Dashboard" />
+                <TopNavItem label="Calendário" active />
+                <TopNavItem label="Tarefas" />
+                <TopNavItem label="Notificações" />
+              </div>
+
+              <div className="ml-auto flex items-center gap-3">
+                <button className="hidden rounded-2xl border border-slate-200 bg-white p-3 text-slate-600 transition hover:bg-slate-50 sm:block">
+                  <Search size={20} />
+                </button>
+
+                <button className="relative rounded-2xl border border-slate-200 bg-white p-3 text-slate-600 transition hover:bg-slate-50">
+                  <Bell size={20} />
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateEventModalOpen(true)}
+                  className="hidden items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 lg:inline-flex"
+                >
+                  <Plus size={17} />
+                  Novo evento
+                </button>
+
+                <div className="hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 md:flex">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                    {userInitials}
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold">
+                      {isUserLoading ? "Carregando..." : userName}
+                    </p>
+                    <p className="text-xs text-slate-400">{userEmail}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                    title="Sair"
+                  >
+                    <LogOut size={17} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div className="grid gap-6 p-5 lg:p-8 2xl:grid-cols-[1fr_420px]">
+            <motion.section
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35 }}
+              className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6"
+            >
+              <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <button className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100">
+                    <ChevronLeft size={20} />
+                  </button>
+
+                  <h2 className="text-2xl font-bold tracking-tight">
+                    Junho 2024
+                  </h2>
+
+                  <button className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100">
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+
+                <div className="flex w-fit rounded-2xl border border-slate-200 bg-slate-50 p-1">
+                  <ViewButton label="Hoje" />
+                  <ViewButton label="Mês" active />
+                  <ViewButton label="Semana" />
+                  <ViewButton label="Dia" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2 text-center">
+                {["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"].map(
+                  (weekDay) => (
+                    <div
+                      key={weekDay}
+                      className="pb-3 text-xs font-bold tracking-wide text-slate-400"
+                    >
+                      {weekDay}
+                    </div>
+                  )
+                )}
+
+                {calendarDays.map((item, index) => (
+                  <CalendarDay
+                    key={`${item.day}-${index}`}
+                    day={item.day}
+                    muted={item.muted}
+                    selected={item.selected}
+                    dot={item.dot}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-9">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-lg font-bold">Próximos eventos</h3>
+
+                  <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-500">
+                    Ver todos
+                  </button>
+                </div>
+
+                {isEventsLoading && (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
+                    Carregando eventos...
+                  </div>
+                )}
+
+                {!isEventsLoading && eventsErrorMessage && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-600">
+                    {eventsErrorMessage}
+                  </div>
+                )}
+
+                {!isEventsLoading &&
+                  !eventsErrorMessage &&
+                  upcomingEvents.length === 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
+                      Você ainda não possui eventos cadastrados.
+                    </div>
+                  )}
+
+                {!isEventsLoading &&
+                  !eventsErrorMessage &&
+                  upcomingEvents.length > 0 && (
+                    <div className="space-y-3">
+                      {upcomingEvents.map((event, index) => (
+                        <EventCard
+                          key={event.id}
+                          icon="calendar"
+                          title={event.title}
+                          time={formatEventTime(event)}
+                          color={getEventCardColor(index)}
+                          onCreateReminder={() => openReminderModal(event)}
+                        />
+                      ))}
+                    </div>
+                  )}
+              </div>
+            </motion.section>
+
+            <aside className="space-y-6">
+              <motion.section
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05, duration: 0.35 }}
+                className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6"
+              >
+                <div className="mb-7 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-400">
+                      Central
+                    </p>
+                    <h3 className="text-xl font-bold">Notificações</h3>
+                  </div>
+
+                  <button className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+                    <Settings size={18} />
+                  </button>
+                </div>
+
+                <NotificationGroup title="Hoje">
+                  <NotificationCard
+                    title="Motor de lembretes"
+                    description="Crie lembretes pelos eventos da agenda."
+                    time="Agora"
+                    color="primary"
+                    icon="bell"
+                  />
+                </NotificationGroup>
+              </motion.section>
+
+              <motion.section
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.35 }}
+                className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6"
+              >
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-400">Resumo</p>
+                    <h3 className="text-xl font-bold">Hoje</h3>
+                  </div>
+
+                  <Clock3 size={20} className="text-indigo-500" />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <SummaryCard label="Eventos" value={String(events.length)} />
+                  <SummaryCard label="Lembretes" value="-" />
+                  <SummaryCard label="Alertas" value="-" />
+                </div>
+              </motion.section>
+            </aside>
+          </div>
+        </section>
+      </div>
+
+      {isCreateEventModalOpen && (
+        <CreateEventModal
+          title={newEventTitle}
+          description={newEventDescription}
+          eventDate={newEventDate}
+          startTime={newEventStartTime}
+          endTime={newEventEndTime}
+          errorMessage={createEventErrorMessage}
+          isLoading={isCreatingEvent}
+          onTitleChange={setNewEventTitle}
+          onDescriptionChange={setNewEventDescription}
+          onEventDateChange={setNewEventDate}
+          onStartTimeChange={setNewEventStartTime}
+          onEndTimeChange={setNewEventEndTime}
+          onClose={() => setIsCreateEventModalOpen(false)}
+          onSubmit={handleCreateEvent}
+        />
+      )}
+
+      {selectedEventForReminder && (
+        <CreateReminderModal
+          eventTitle={selectedEventForReminder.title}
+          minutesBefore={reminderMinutesBefore}
+          errorMessage={createReminderErrorMessage}
+          successMessage={createReminderSuccessMessage}
+          isLoading={isCreatingReminder}
+          onMinutesBeforeChange={setReminderMinutesBefore}
+          onClose={closeReminderModal}
+          onSubmit={handleCreateReminder}
+        />
+      )}
+    </main>
+  );
+}
+
+function CreateEventModal({
+  title,
+  description,
+  eventDate,
+  startTime,
+  endTime,
+  errorMessage,
+  isLoading,
+  onTitleChange,
+  onDescriptionChange,
+  onEventDateChange,
+  onStartTimeChange,
+  onEndTimeChange,
+  onClose,
+  onSubmit,
+}: {
+  title: string;
+  description: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  errorMessage: string;
+  isLoading: boolean;
+  onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
+  onEventDateChange: (value: string) => void;
+  onStartTimeChange: (value: string) => void;
+  onEndTimeChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-5 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.25 }}
+        className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/20"
+      >
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-indigo-600">
+              Novo evento
+            </p>
+            <h2 className="mt-1 text-2xl font-bold tracking-tight">
+              Criar compromisso
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Adicione um evento à sua agenda do LifeHUB.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-slate-700">
+              Título
+            </label>
+
+            <input
+              type="text"
+              value={title}
+              onChange={(event) => onTitleChange(event.target.value)}
+              placeholder="Ex: Consulta médica"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-slate-700">
+              Descrição
+            </label>
+
+            <textarea
+              value={description}
+              onChange={(event) => onDescriptionChange(event.target.value)}
+              placeholder="Detalhes do evento"
+              rows={3}
+              className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Data
+              </label>
+
+              <input
+                type="date"
+                value={eventDate}
+                onChange={(event) => onEventDateChange(event.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Início
+              </label>
+
+              <input
+                type="time"
+                value={startTime}
+                onChange={(event) => onStartTimeChange(event.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Término
+              </label>
+
+              <input
+                type="time"
+                value={endTime}
+                onChange={(event) => onEndTimeChange(event.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+              />
+            </div>
+          </div>
+
+          {errorMessage && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {errorMessage}
+            </div>
+          )}
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isLoading ? "Criando..." : "Criar evento"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function CreateReminderModal({
+  eventTitle,
+  minutesBefore,
+  errorMessage,
+  successMessage,
+  isLoading,
+  onMinutesBeforeChange,
+  onClose,
+  onSubmit,
+}: {
+  eventTitle: string;
+  minutesBefore: string;
+  errorMessage: string;
+  successMessage: string;
+  isLoading: boolean;
+  onMinutesBeforeChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-5 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.25 }}
+        className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/20"
+      >
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-indigo-600">
+              Novo lembrete
+            </p>
+            <h2 className="mt-1 text-2xl font-bold tracking-tight">
+              Adicionar lembrete
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Evento: <strong>{eventTitle}</strong>
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-slate-700">
+              Avisar quantos minutos antes?
+            </label>
+
+            <input
+              type="number"
+              min="1"
+              max="43200"
+              value={minutesBefore}
+              onChange={(event) => onMinutesBeforeChange(event.target.value)}
+              placeholder="Ex: 15"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+            />
+
+            <p className="mt-2 text-xs text-slate-400">
+              Exemplos: 15 minutos, 60 minutos, 120 minutos ou 1440 minutos.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            <QuickReminderButton label="15m" value="15" onClick={onMinutesBeforeChange} />
+            <QuickReminderButton label="1h" value="60" onClick={onMinutesBeforeChange} />
+            <QuickReminderButton label="2h" value="120" onClick={onMinutesBeforeChange} />
+            <QuickReminderButton label="1d" value="1440" onClick={onMinutesBeforeChange} />
+          </div>
+
+          {errorMessage && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {errorMessage}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-600">
+              {successMessage}
+            </div>
+          )}
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isLoading ? "Criando..." : "Criar lembrete"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function QuickReminderButton({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  onClick: (value: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(value)}
+      className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
+    >
+      {label}
+    </button>
+  );
+}
+
+function SidebarItem({
+  icon,
+  label,
+  active,
+}: {
+  icon: ReactNode;
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <button
+      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+        active
+          ? "bg-indigo-50 text-indigo-600"
+          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function TopNavItem({ label, active }: { label: string; active?: boolean }) {
+  return (
+    <button
+      className={`relative px-2 py-2 text-sm font-semibold transition ${
+        active ? "text-indigo-600" : "text-slate-500 hover:text-slate-900"
+      }`}
+    >
+      {label}
+
+      {active && (
+        <span className="absolute -bottom-[18px] left-0 h-0.5 w-full rounded-full bg-indigo-600" />
+      )}
+    </button>
+  );
+}
+
+function ViewButton({ label, active }: { label: string; active?: boolean }) {
+  return (
+    <button
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        active
+          ? "bg-indigo-600 text-white shadow-sm"
+          : "text-slate-500 hover:bg-white hover:text-slate-900"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function CalendarDay({
+  day,
+  muted,
+  selected,
+  dot,
+}: {
+  day: number;
+  muted?: boolean;
+  selected?: boolean;
+  dot?: CalendarDotColor;
+}) {
+  const dotColor: Record<CalendarDotColor, string> = {
+    primary: "bg-indigo-600",
+    success: "bg-emerald-500",
+    danger: "bg-red-500",
+  };
+
+  return (
+    <button
+      className={`relative flex h-14 items-center justify-center rounded-2xl text-sm font-semibold transition hover:bg-slate-50 ${
+        selected
+          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-600"
+          : muted
+            ? "text-slate-300"
+            : "text-slate-800"
+      }`}
+    >
+      {day}
+
+      {dot && !selected && (
+        <span
+          className={`absolute bottom-2 h-1.5 w-1.5 rounded-full ${dotColor[dot]}`}
+        />
+      )}
+    </button>
+  );
+}
+
+function EventCard({
+  title,
+  time,
+  color,
+  icon,
+  onCreateReminder,
+}: {
+  title: string;
+  time: string;
+  color: EventCardColor;
+  icon: "calendar" | "check" | "bell";
+  onCreateReminder: () => void;
+}) {
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center"
+    >
+      <IconBadge color={color} icon={icon} />
+
+      <div className="flex-1">
+        <h4 className="font-bold text-slate-900">{title}</h4>
+        <p className="mt-1 text-sm text-slate-500">{time}</p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onCreateReminder}
+          className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-100"
+        >
+          Adicionar lembrete
+        </button>
+
+        <span
+          className={`h-2.5 w-2.5 rounded-full ${
+            color === "primary"
+              ? "bg-indigo-600"
+              : color === "success"
+                ? "bg-emerald-500"
+                : "bg-red-500"
+          }`}
+        />
+      </div>
+    </motion.div>
+  );
+}
+
+function NotificationGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mb-7 last:mb-0">
+      <p className="mb-3 text-sm font-bold text-slate-700">{title}</p>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
+
+function NotificationCard({
+  title,
+  description,
+  time,
+  color,
+  icon,
+}: {
+  title: string;
+  description: string;
+  time: string;
+  color: "primary" | "success" | "danger" | "neutral";
+  icon: "calendar" | "check" | "bell";
+}) {
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+    >
+      <IconBadge color={color} icon={icon} />
+
+      <div className="flex-1">
+        <h4 className="font-bold text-slate-900">{title}</h4>
+        <p className="mt-1 text-sm text-slate-500">{description}</p>
+      </div>
+
+      <span className="text-sm font-semibold text-slate-500">{time}</span>
+    </motion.div>
+  );
+}
+
+function IconBadge({
+  color,
+  icon,
+}: {
+  color: "primary" | "success" | "danger" | "neutral";
+  icon: "calendar" | "check" | "bell";
+}) {
+  const colorClasses: Record<
+    "primary" | "success" | "danger" | "neutral",
+    string
+  > = {
+    primary: "bg-indigo-100 text-indigo-600",
+    success: "bg-emerald-100 text-emerald-600",
+    danger: "bg-red-100 text-red-600",
+    neutral: "bg-slate-100 text-slate-500",
+  };
+
+  return (
+    <div
+      className={`flex h-12 w-12 items-center justify-center rounded-2xl ${colorClasses[color]}`}
+    >
+      {icon === "calendar" && <CalendarDays size={22} />}
+      {icon === "check" && <CheckCircle2 size={22} />}
+      {icon === "bell" && <Bell size={22} />}
+    </div>
+  );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-slate-50 p-4 text-center">
+      <p className="text-xs font-semibold text-slate-400">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function getUserInitials(name: string) {
+  const nameParts = name.trim().split(" ");
+
+  if (nameParts.length === 1) {
+    return nameParts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+}
+
+function formatEventTime(event: LifeHubEvent) {
+  const startTime = formatTime(event.start_time);
+
+  if (!event.end_time) {
+    return `${formatDate(event.event_date)} às ${startTime}`;
+  }
+
+  return `${formatDate(event.event_date)} • ${startTime} - ${formatTime(
+    event.end_time
+  )}`;
+}
+
+function formatTime(time: string) {
+  return time.slice(0, 5);
+}
+
+function formatDate(date: string) {
+  const [year, month, day] = date.split("-");
+
+  return `${day}/${month}/${year}`;
+}
+
+function getEventCardColor(index: number): EventCardColor {
+  const colors: EventCardColor[] = ["primary", "success", "danger"];
+
+  return colors[index % colors.length];
+}
+
+export default DashboardPage;
