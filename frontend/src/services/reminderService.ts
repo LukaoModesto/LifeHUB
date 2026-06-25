@@ -30,3 +30,10 @@ export async function createEventReminder(
 
   return response.data;
 }
+
+export async function deleteEventReminder(
+  eventId: number,
+  reminderId: number
+) {
+  await api.delete(`/events/${eventId}/reminders/${reminderId}`);
+}

@@ -30,7 +30,9 @@ import {
 } from "../services/eventService";
 import {
   createEventReminder,
+  deleteEventReminder,
   getEventReminders,
+  type EventReminder,
 } from "../services/reminderService";
 import {
   getDueReminders,
@@ -56,6 +58,8 @@ type CalendarDayItem = {
   selected?: boolean;
   dot?: CalendarDotColor;
 };
+
+const defaultReminderValues = [1440, 720, 360, 60, 15];
 
 const calendarDays: CalendarDayItem[] = [
   { day: 26, muted: true },
@@ -130,6 +134,8 @@ function DashboardPage() {
 
   const [selectedEventForReminder, setSelectedEventForReminder] =
     useState<LifeHubEvent | null>(null);
+  const [existingRemindersForSelectedEvent, setExistingRemindersForSelectedEvent] =
+    useState<EventReminder[]>([]);
   const [selectedReminderValues, setSelectedReminderValues] = useState<
     number[]
   >([]);
@@ -140,6 +146,8 @@ function DashboardPage() {
   const [createReminderSuccessMessage, setCreateReminderSuccessMessage] =
     useState("");
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
+  const [isLoadingReminderSettings, setIsLoadingReminderSettings] =
+    useState(false);
 
   const [selectedEventForEdit, setSelectedEventForEdit] =
     useState<LifeHubEvent | null>(null);
@@ -318,8 +326,9 @@ function DashboardPage() {
 
     try {
       const createdEvent = await createEvent(eventData);
+      const updatedEvents = [...events, createdEvent];
 
-      setEvents((currentEvents) => [...currentEvents, createdEvent]);
+      setEvents(updatedEvents);
 
       setNewEventTitle("");
       setNewEventDescription("");
@@ -328,7 +337,7 @@ function DashboardPage() {
       setNewEventEndTime("");
       setIsCreateEventModalOpen(false);
 
-      await loadEventReminderCounts([...events, createdEvent]);
+      await loadEventReminderCounts(updatedEvents);
     } catch {
       setCreateEventErrorMessage("Não foi possível criar o evento.");
     } finally {
@@ -356,44 +365,67 @@ function DashboardPage() {
       return;
     }
 
+    const existingReminderValues = existingRemindersForSelectedEvent.map(
+      (reminder) => reminder.minutes_before
+    );
+
+    const valuesToCreate = reminderValues.filter(
+      (value) => !existingReminderValues.includes(value)
+    );
+
+    const remindersToDelete = existingRemindersForSelectedEvent.filter(
+      (reminder) => !reminderValues.includes(reminder.minutes_before)
+    );
+
+    if (valuesToCreate.length === 0 && remindersToDelete.length === 0) {
+      setCreateReminderSuccessMessage("Lembretes já estão atualizados.");
+      return;
+    }
+
     setIsCreatingReminder(true);
 
     try {
-      const results = await Promise.allSettled(
-        reminderValues.map((minutesBefore) =>
-          createEventReminder(selectedEventForReminder.id, {
-            minutes_before: minutesBefore,
-          })
-        )
+      const createOperations = valuesToCreate.map((minutesBefore) =>
+        createEventReminder(selectedEventForReminder.id, {
+          minutes_before: minutesBefore,
+        })
       );
 
-      const createdCount = results.filter(
+      const deleteOperations = remindersToDelete.map((reminder) =>
+        deleteEventReminder(selectedEventForReminder.id, reminder.id)
+      );
+
+      const results = await Promise.allSettled([
+        ...createOperations,
+        ...deleteOperations,
+      ]);
+
+      const successfulOperationsCount = results.filter(
         (result) => result.status === "fulfilled"
       ).length;
 
-      const failedCount = results.length - createdCount;
-
-      if (createdCount === 0) {
+      if (successfulOperationsCount === 0) {
         setCreateReminderErrorMessage(
-          "Não foi possível criar os lembretes. Verifique se eles já existem para este evento."
+          "Não foi possível atualizar os lembretes."
         );
         return;
       }
 
-      if (failedCount > 0) {
-        setCreateReminderSuccessMessage(
-          `${createdCount} lembrete(s) criado(s). ${failedCount} já existia(m) ou não pôde/puderam ser criado(s).`
-        );
-      } else {
-        setCreateReminderSuccessMessage(
-          `${createdCount} lembrete(s) criado(s) com sucesso.`
-        );
-      }
+      const updatedReminders = await getEventReminders(
+        selectedEventForReminder.id
+      );
 
-      setSelectedReminderValues([]);
+      setExistingRemindersForSelectedEvent(updatedReminders);
+      setSelectedReminderValues(
+        updatedReminders
+          .map((reminder) => reminder.minutes_before)
+          .sort((firstValue, secondValue) => secondValue - firstValue)
+      );
       setCustomReminderMinutesBefore("");
 
       await loadEventReminderCounts(events);
+
+      setCreateReminderSuccessMessage("Lembretes atualizados com sucesso.");
 
       setTimeout(() => {
         setSelectedEventForReminder(null);
@@ -401,7 +433,7 @@ function DashboardPage() {
         loadDueReminders();
       }, 900);
     } catch {
-      setCreateReminderErrorMessage("Não foi possível criar os lembretes.");
+      setCreateReminderErrorMessage("Não foi possível atualizar os lembretes.");
     } finally {
       setIsCreatingReminder(false);
     }
@@ -516,20 +548,46 @@ function DashboardPage() {
     }
   }
 
-  function openReminderModal(event: LifeHubEvent) {
+  async function openReminderModal(event: LifeHubEvent) {
     setSelectedEventForReminder(event);
-    setSelectedReminderValues([1440, 720, 360, 60, 15]);
-    setCustomReminderMinutesBefore("");
-    setCreateReminderErrorMessage("");
-    setCreateReminderSuccessMessage("");
-  }
-
-  function closeReminderModal() {
-    setSelectedEventForReminder(null);
     setSelectedReminderValues([]);
     setCustomReminderMinutesBefore("");
     setCreateReminderErrorMessage("");
     setCreateReminderSuccessMessage("");
+    setExistingRemindersForSelectedEvent([]);
+    setIsLoadingReminderSettings(true);
+
+    try {
+      const reminders = await getEventReminders(event.id);
+
+      setExistingRemindersForSelectedEvent(reminders);
+
+      if (reminders.length > 0) {
+        setSelectedReminderValues(
+          reminders
+            .map((reminder) => reminder.minutes_before)
+            .sort((firstValue, secondValue) => secondValue - firstValue)
+        );
+      } else {
+        setSelectedReminderValues(defaultReminderValues);
+      }
+    } catch {
+      setCreateReminderErrorMessage(
+        "Não foi possível carregar os lembretes deste evento."
+      );
+    } finally {
+      setIsLoadingReminderSettings(false);
+    }
+  }
+
+  function closeReminderModal() {
+    setSelectedEventForReminder(null);
+    setExistingRemindersForSelectedEvent([]);
+    setSelectedReminderValues([]);
+    setCustomReminderMinutesBefore("");
+    setCreateReminderErrorMessage("");
+    setCreateReminderSuccessMessage("");
+    setIsLoadingReminderSettings(false);
   }
 
   function handleToggleReminderPreset(value: number) {
@@ -718,7 +776,7 @@ function DashboardPage() {
           customMinutesBefore={customReminderMinutesBefore}
           errorMessage={createReminderErrorMessage}
           successMessage={createReminderSuccessMessage}
-          isLoading={isCreatingReminder}
+          isLoading={isCreatingReminder || isLoadingReminderSettings}
           onTogglePreset={handleToggleReminderPreset}
           onCustomMinutesBeforeChange={setCustomReminderMinutesBefore}
           onClose={closeReminderModal}
