@@ -11,6 +11,13 @@ import NotificationPanel from "../components/dashboard/NotificationPanel";
 import SummaryPanel from "../components/dashboard/SummaryPanel";
 import CalendarSection from "../components/dashboard/CalendarSection";
 
+import {
+  formatTime,
+  isPastEvent,
+  sortEventsAscending,
+  sortEventsDescending,
+} from "../utils/eventDateUtils";
+
 import { api } from "../services/api";
 import {
   createEvent,
@@ -43,8 +50,6 @@ type CalendarDayItem = {
   selected?: boolean;
   dot?: CalendarDotColor;
 };
-
-type EventCardColor = "primary" | "success" | "danger";
 
 const calendarDays: CalendarDayItem[] = [
   { day: 26, muted: true },
@@ -601,41 +606,4 @@ function getUserInitials(name: string) {
 
   return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
 }
-
-function getEventDateTime(event: LifeHubEvent) {
-  return new Date(`${event.event_date}T${formatTime(event.start_time)}`);
-}
-
-function isPastEvent(event: LifeHubEvent) {
-  const eventEndTime = event.end_time
-    ? new Date(`${event.event_date}T${formatTime(event.end_time)}`)
-    : getEventDateTime(event);
-
-  return eventEndTime.getTime() < new Date().getTime();
-}
-
-function sortEventsAscending(
-  firstEvent: LifeHubEvent,
-  secondEvent: LifeHubEvent
-) {
-  return (
-    getEventDateTime(firstEvent).getTime() -
-    getEventDateTime(secondEvent).getTime()
-  );
-}
-
-function sortEventsDescending(
-  firstEvent: LifeHubEvent,
-  secondEvent: LifeHubEvent
-) {
-  return (
-    getEventDateTime(secondEvent).getTime() -
-    getEventDateTime(firstEvent).getTime()
-  );
-}
-
-function formatTime(time: string) {
-  return time.slice(0, 5);
-}
-
 export default DashboardPage;
