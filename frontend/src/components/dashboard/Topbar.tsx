@@ -1,6 +1,5 @@
 import {
   Bell,
-  CalendarDays,
   LogOut,
   Menu,
   Plus,
