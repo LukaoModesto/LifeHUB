@@ -1,54 +1,95 @@
 type NotificationSoundType = "default" | "alert";
 
-export function playNotificationSound(soundType: NotificationSoundType) {
-  const AudioContextClass =
-    window.AudioContext || window.webkitAudioContext;
+let audioContext: AudioContext | null = null;
 
-  const audioContext = new AudioContextClass();
+export async function unlockNotificationSound() {
+  const context = getAudioContext();
+
+  if (context.state === "suspended") {
+    await context.resume();
+  }
+
+  playSilentTone(context);
+}
+
+export function playNotificationSound(soundType: NotificationSoundType) {
+  const context = getAudioContext();
+
+  if (context.state === "suspended") {
+    throw new Error("Audio context is suspended.");
+  }
 
   if (soundType === "alert") {
-    playAlertSound(audioContext);
+    playAlertSound(context);
     return;
   }
 
-  playDefaultSound(audioContext);
+  playDefaultSound(context);
 }
 
-function playDefaultSound(audioContext: AudioContext) {
-  playTone(audioContext, 660, 0);
-  playTone(audioContext, 880, 0.16);
+function getAudioContext() {
+  if (audioContext) {
+    return audioContext;
+  }
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+  audioContext = new AudioContextClass();
+
+  return audioContext;
 }
 
-function playAlertSound(audioContext: AudioContext) {
-  playTone(audioContext, 880, 0);
-  playTone(audioContext, 660, 0.14);
-  playTone(audioContext, 880, 0.28);
+function playDefaultSound(context: AudioContext) {
+  playTone(context, 660, 0);
+  playTone(context, 880, 0.16);
+}
+
+function playAlertSound(context: AudioContext) {
+  playTone(context, 880, 0);
+  playTone(context, 660, 0.14);
+  playTone(context, 880, 0.28);
+}
+
+function playSilentTone(context: AudioContext) {
+  const oscillator = context.createOscillator();
+  const gainNode = context.createGain();
+
+  oscillator.type = "sine";
+  oscillator.frequency.value = 440;
+
+  gainNode.gain.setValueAtTime(0.0001, context.currentTime);
+
+  oscillator.connect(gainNode);
+  gainNode.connect(context.destination);
+
+  oscillator.start();
+  oscillator.stop(context.currentTime + 0.01);
 }
 
 function playTone(
-  audioContext: AudioContext,
+  context: AudioContext,
   frequency: number,
   startDelay: number
 ) {
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
+  const oscillator = context.createOscillator();
+  const gainNode = context.createGain();
 
   oscillator.type = "sine";
   oscillator.frequency.value = frequency;
 
-  gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime + startDelay);
+  gainNode.gain.setValueAtTime(0.0001, context.currentTime + startDelay);
   gainNode.gain.exponentialRampToValueAtTime(
     0.18,
-    audioContext.currentTime + startDelay + 0.02
+    context.currentTime + startDelay + 0.02
   );
   gainNode.gain.exponentialRampToValueAtTime(
     0.0001,
-    audioContext.currentTime + startDelay + 0.14
+    context.currentTime + startDelay + 0.14
   );
 
   oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
+  gainNode.connect(context.destination);
 
-  oscillator.start(audioContext.currentTime + startDelay);
-  oscillator.stop(audioContext.currentTime + startDelay + 0.16);
+  oscillator.start(context.currentTime + startDelay);
+  oscillator.stop(context.currentTime + startDelay + 0.16);
 }

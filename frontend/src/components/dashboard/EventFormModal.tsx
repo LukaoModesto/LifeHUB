@@ -58,9 +58,8 @@ function EventFormModal({
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              {isEditMode
-                ? "Atualize as informações do evento."
-                : "Adicione um evento à sua agenda do LifeHUB."}
+              Informe quando o compromisso acontece. Os lembretes serão
+              configurados depois, a partir dessa data e horário.
             </p>
           </div>
 
@@ -76,7 +75,7 @@ function EventFormModal({
         <form onSubmit={onSubmit} className="space-y-5">
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              Título
+              Título do evento
             </label>
 
             <input
@@ -90,13 +89,13 @@ function EventFormModal({
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              Descrição
+              Descrição opcional
             </label>
 
             <textarea
               value={description}
               onChange={(event) => onDescriptionChange(event.target.value)}
-              placeholder="Detalhes do evento"
+              placeholder="Ex: Levar documentos, endereço, observações..."
               rows={3}
               className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
             />
@@ -105,7 +104,7 @@ function EventFormModal({
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Data
+                Data do evento
               </label>
 
               <input
@@ -118,7 +117,7 @@ function EventFormModal({
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Início
+                Horário de início
               </label>
 
               <input
@@ -131,7 +130,7 @@ function EventFormModal({
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Término
+                Horário de término
               </label>
 
               <input
@@ -140,6 +139,8 @@ function EventFormModal({
                 onChange={(event) => onEndTimeChange(event.target.value)}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
               />
+
+              <p className="mt-2 text-xs text-slate-400">Opcional</p>
             </div>
           </div>
 

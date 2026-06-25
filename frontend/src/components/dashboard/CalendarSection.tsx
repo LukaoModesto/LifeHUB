@@ -19,6 +19,7 @@ type CalendarSectionProps = {
   calendarDays: CalendarDayItem[];
   upcomingEvents: LifeHubEvent[];
   pastEvents: LifeHubEvent[];
+  eventReminderCounts: Record<number, number>;
   isEventsLoading: boolean;
   eventsErrorMessage: string;
   onCreateReminder: (event: LifeHubEvent) => void;
@@ -30,6 +31,7 @@ function CalendarSection({
   calendarDays,
   upcomingEvents,
   pastEvents,
+  eventReminderCounts,
   isEventsLoading,
   eventsErrorMessage,
   onCreateReminder,
@@ -130,6 +132,7 @@ function CalendarSection({
                   time={formatEventTime(event)}
                   color={getEventCardColor(index)}
                   isPast={false}
+                  reminderCount={eventReminderCounts[event.id] ?? 0}
                   onCreateReminder={() => onCreateReminder(event)}
                   onEdit={() => onEditEvent(event)}
                   onDelete={() => onDeleteEvent(event)}
@@ -168,6 +171,7 @@ function CalendarSection({
                   time={formatEventTime(event)}
                   color={getEventCardColor(index)}
                   isPast
+                  reminderCount={eventReminderCounts[event.id] ?? 0}
                   onCreateReminder={() => onCreateReminder(event)}
                   onEdit={() => onEditEvent(event)}
                   onDelete={() => onDeleteEvent(event)}

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CalendarDays, Edit3, Trash2 } from "lucide-react";
+import { Bell, CalendarDays, Edit3, Trash2 } from "lucide-react";
 
 type EventCardColor = "primary" | "success" | "danger";
 
@@ -8,6 +8,7 @@ type EventCardProps = {
   time: string;
   color: EventCardColor;
   isPast: boolean;
+  reminderCount?: number;
   onCreateReminder: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -18,10 +19,13 @@ function EventCard({
   time,
   color,
   isPast,
+  reminderCount = 0,
   onCreateReminder,
   onEdit,
   onDelete,
 }: EventCardProps) {
+  const hasReminders = reminderCount > 0;
+
   return (
     <motion.div
       whileHover={{ y: -2 }}
@@ -42,6 +46,13 @@ function EventCard({
               Finalizado
             </span>
           )}
+
+          {!isPast && hasReminders && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
+              <Bell size={13} />
+              {reminderCount} {reminderCount === 1 ? "lembrete" : "lembretes"}
+            </span>
+          )}
         </div>
 
         <p className="mt-1 text-sm text-slate-500">{time}</p>
@@ -52,9 +63,10 @@ function EventCard({
           <button
             type="button"
             onClick={onCreateReminder}
-            className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-100"
+            className="inline-flex items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-100"
           >
-            Adicionar lembrete
+            <Bell size={15} />
+            Lembretes
           </button>
         )}
 

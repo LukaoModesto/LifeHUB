@@ -28,13 +28,19 @@ import {
   type LifeHubEvent,
   type UpdateEventData,
 } from "../services/eventService";
-import { createEventReminder } from "../services/reminderService";
+import {
+  createEventReminder,
+  getEventReminders,
+} from "../services/reminderService";
 import {
   getDueReminders,
   markReminderAsSent,
   type DueReminder,
 } from "../services/dueReminderService";
-import { playNotificationSound } from "../services/notificationSoundService";
+import {
+  playNotificationSound,
+  unlockNotificationSound,
+} from "../services/notificationSoundService";
 
 type User = {
   id: number;
@@ -102,6 +108,9 @@ function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<LifeHubEvent[]>([]);
   const [dueReminders, setDueReminders] = useState<DueReminder[]>([]);
+  const [eventReminderCounts, setEventReminderCounts] = useState<
+    Record<number, number>
+  >({});
 
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [isEventsLoading, setIsEventsLoading] = useState(true);
@@ -121,7 +130,11 @@ function DashboardPage() {
 
   const [selectedEventForReminder, setSelectedEventForReminder] =
     useState<LifeHubEvent | null>(null);
-  const [reminderMinutesBefore, setReminderMinutesBefore] = useState("15");
+  const [selectedReminderValues, setSelectedReminderValues] = useState<
+    number[]
+  >([]);
+  const [customReminderMinutesBefore, setCustomReminderMinutesBefore] =
+    useState("");
   const [createReminderErrorMessage, setCreateReminderErrorMessage] =
     useState("");
   const [createReminderSuccessMessage, setCreateReminderSuccessMessage] =
@@ -164,6 +177,35 @@ function DashboardPage() {
     loadDashboardData();
   }, [navigate]);
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadDueReminders();
+    }, 60000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleFirstUserInteraction() {
+      unlockNotificationSound().catch(() => {
+        console.warn("Não foi possível liberar o som das notificações.");
+      });
+
+      window.removeEventListener("pointerdown", handleFirstUserInteraction);
+      window.removeEventListener("keydown", handleFirstUserInteraction);
+    }
+
+    window.addEventListener("pointerdown", handleFirstUserInteraction);
+    window.addEventListener("keydown", handleFirstUserInteraction);
+
+    return () => {
+      window.removeEventListener("pointerdown", handleFirstUserInteraction);
+      window.removeEventListener("keydown", handleFirstUserInteraction);
+    };
+  }, []);
+
   async function loadEvents() {
     setIsEventsLoading(true);
     setEventsErrorMessage("");
@@ -171,11 +213,42 @@ function DashboardPage() {
     try {
       const eventsData = await getEvents();
       setEvents(eventsData);
+      await loadEventReminderCounts(eventsData);
     } catch {
       setEventsErrorMessage("Não foi possível carregar seus eventos.");
     } finally {
       setIsEventsLoading(false);
     }
+  }
+
+  async function loadEventReminderCounts(eventsData: LifeHubEvent[]) {
+    const futureEvents = eventsData.filter((event) => !isPastEvent(event));
+
+    if (futureEvents.length === 0) {
+      setEventReminderCounts({});
+      return;
+    }
+
+    const results = await Promise.allSettled(
+      futureEvents.map(async (event) => {
+        const reminders = await getEventReminders(event.id);
+
+        return {
+          eventId: event.id,
+          reminderCount: reminders.length,
+        };
+      })
+    );
+
+    const reminderCounts: Record<number, number> = {};
+
+    results.forEach((result) => {
+      if (result.status === "fulfilled") {
+        reminderCounts[result.value.eventId] = result.value.reminderCount;
+      }
+    });
+
+    setEventReminderCounts(reminderCounts);
   }
 
   async function loadDueReminders() {
@@ -192,10 +265,9 @@ function DashboardPage() {
       );
 
       newReminders.forEach((reminder) => {
-        playedReminderIdsRef.current.add(reminder.reminder_id);
-
         try {
           playNotificationSound(reminder.sound_type);
+          playedReminderIdsRef.current.add(reminder.reminder_id);
         } catch {
           console.warn("O navegador bloqueou o som da notificação.");
         }
@@ -255,6 +327,8 @@ function DashboardPage() {
       setNewEventStartTime("");
       setNewEventEndTime("");
       setIsCreateEventModalOpen(false);
+
+      await loadEventReminderCounts([...events, createdEvent]);
     } catch {
       setCreateEventErrorMessage("Não foi possível criar o evento.");
     } finally {
@@ -273,18 +347,11 @@ function DashboardPage() {
       return;
     }
 
-    const minutesBefore = Number(reminderMinutesBefore);
+    const reminderValues = buildReminderValues();
 
-    if (!Number.isInteger(minutesBefore) || minutesBefore <= 0) {
+    if (reminderValues.length === 0) {
       setCreateReminderErrorMessage(
-        "Informe uma quantidade válida de minutos."
-      );
-      return;
-    }
-
-    if (minutesBefore > 43200) {
-      setCreateReminderErrorMessage(
-        "O lembrete não pode ultrapassar 30 dias antes do evento."
+        "Selecione pelo menos um lembrete ou informe um valor personalizado."
       );
       return;
     }
@@ -292,22 +359,49 @@ function DashboardPage() {
     setIsCreatingReminder(true);
 
     try {
-      await createEventReminder(selectedEventForReminder.id, {
-        minutes_before: minutesBefore,
-      });
+      const results = await Promise.allSettled(
+        reminderValues.map((minutesBefore) =>
+          createEventReminder(selectedEventForReminder.id, {
+            minutes_before: minutesBefore,
+          })
+        )
+      );
 
-      setCreateReminderSuccessMessage("Lembrete criado com sucesso.");
-      setReminderMinutesBefore("15");
+      const createdCount = results.filter(
+        (result) => result.status === "fulfilled"
+      ).length;
+
+      const failedCount = results.length - createdCount;
+
+      if (createdCount === 0) {
+        setCreateReminderErrorMessage(
+          "Não foi possível criar os lembretes. Verifique se eles já existem para este evento."
+        );
+        return;
+      }
+
+      if (failedCount > 0) {
+        setCreateReminderSuccessMessage(
+          `${createdCount} lembrete(s) criado(s). ${failedCount} já existia(m) ou não pôde/puderam ser criado(s).`
+        );
+      } else {
+        setCreateReminderSuccessMessage(
+          `${createdCount} lembrete(s) criado(s) com sucesso.`
+        );
+      }
+
+      setSelectedReminderValues([]);
+      setCustomReminderMinutesBefore("");
+
+      await loadEventReminderCounts(events);
 
       setTimeout(() => {
         setSelectedEventForReminder(null);
         setCreateReminderSuccessMessage("");
         loadDueReminders();
-      }, 700);
+      }, 900);
     } catch {
-      setCreateReminderErrorMessage(
-        "Não foi possível criar o lembrete. Verifique se ele já existe para este evento."
-      );
+      setCreateReminderErrorMessage("Não foi possível criar os lembretes.");
     } finally {
       setIsCreatingReminder(false);
     }
@@ -358,14 +452,15 @@ function DashboardPage() {
     try {
       const updatedEvent = await updateEvent(selectedEventForEdit.id, eventData);
 
-      setEvents((currentEvents) =>
-        currentEvents.map((currentEvent) =>
-          currentEvent.id === updatedEvent.id ? updatedEvent : currentEvent
-        )
+      const updatedEvents = events.map((currentEvent) =>
+        currentEvent.id === updatedEvent.id ? updatedEvent : currentEvent
       );
+
+      setEvents(updatedEvents);
 
       closeEditEventModal();
       loadDueReminders();
+      await loadEventReminderCounts(updatedEvents);
     } catch {
       setEditEventErrorMessage("Não foi possível atualizar o evento.");
     } finally {
@@ -384,11 +479,11 @@ function DashboardPage() {
     try {
       await deleteEvent(selectedEventForDelete.id);
 
-      setEvents((currentEvents) =>
-        currentEvents.filter(
-          (currentEvent) => currentEvent.id !== selectedEventForDelete.id
-        )
+      const updatedEvents = events.filter(
+        (currentEvent) => currentEvent.id !== selectedEventForDelete.id
       );
+
+      setEvents(updatedEvents);
 
       setDueReminders((currentReminders) =>
         currentReminders.filter(
@@ -397,6 +492,7 @@ function DashboardPage() {
       );
 
       setSelectedEventForDelete(null);
+      await loadEventReminderCounts(updatedEvents);
     } catch {
       setDeleteEventErrorMessage("Não foi possível excluir o evento.");
     } finally {
@@ -422,16 +518,58 @@ function DashboardPage() {
 
   function openReminderModal(event: LifeHubEvent) {
     setSelectedEventForReminder(event);
-    setReminderMinutesBefore("15");
+    setSelectedReminderValues([1440, 720, 360, 60, 15]);
+    setCustomReminderMinutesBefore("");
     setCreateReminderErrorMessage("");
     setCreateReminderSuccessMessage("");
   }
 
   function closeReminderModal() {
     setSelectedEventForReminder(null);
-    setReminderMinutesBefore("15");
+    setSelectedReminderValues([]);
+    setCustomReminderMinutesBefore("");
     setCreateReminderErrorMessage("");
     setCreateReminderSuccessMessage("");
+  }
+
+  function handleToggleReminderPreset(value: number) {
+    setSelectedReminderValues((currentValues) => {
+      if (currentValues.includes(value)) {
+        return currentValues.filter((currentValue) => currentValue !== value);
+      }
+
+      return [...currentValues, value].sort((firstValue, secondValue) => {
+        return secondValue - firstValue;
+      });
+    });
+  }
+
+  function buildReminderValues() {
+    const reminderValues = [...selectedReminderValues];
+
+    if (customReminderMinutesBefore) {
+      const customValue = Number(customReminderMinutesBefore);
+
+      if (!Number.isInteger(customValue) || customValue <= 0) {
+        setCreateReminderErrorMessage(
+          "Informe uma quantidade personalizada válida de minutos."
+        );
+        return [];
+      }
+
+      if (customValue > 43200) {
+        setCreateReminderErrorMessage(
+          "O lembrete personalizado não pode ultrapassar 30 dias antes do evento."
+        );
+        return [];
+      }
+
+      reminderValues.push(customValue);
+    }
+
+    return Array.from(new Set(reminderValues)).sort(
+      (firstValue, secondValue) => secondValue - firstValue
+    );
   }
 
   function openEditEventModal(event: LifeHubEvent) {
@@ -503,14 +641,15 @@ function DashboardPage() {
 
           <div className="grid gap-6 p-5 lg:p-8 2xl:grid-cols-[1fr_420px]">
             <CalendarSection
-            calendarDays={calendarDays}
-            upcomingEvents={upcomingEvents}
-            pastEvents={pastEvents}
-            isEventsLoading={isEventsLoading}
-            eventsErrorMessage={eventsErrorMessage}
-            onCreateReminder={openReminderModal}
-            onEditEvent={openEditEventModal}
-            onDeleteEvent={openDeleteEventModal}
+              calendarDays={calendarDays}
+              upcomingEvents={upcomingEvents}
+              pastEvents={pastEvents}
+              eventReminderCounts={eventReminderCounts}
+              isEventsLoading={isEventsLoading}
+              eventsErrorMessage={eventsErrorMessage}
+              onCreateReminder={openReminderModal}
+              onEditEvent={openEditEventModal}
+              onDeleteEvent={openDeleteEventModal}
             />
 
             <aside className="space-y-6">
@@ -521,10 +660,11 @@ function DashboardPage() {
                 onRefresh={loadDueReminders}
                 onMarkAsSeen={handleMarkReminderAsSent}
               />
+
               <SummaryPanel
-              upcomingEventsCount={upcomingEvents.length}
-              pastEventsCount={pastEvents.length}
-              alertRemindersCount={alertRemindersCount}
+                upcomingEventsCount={upcomingEvents.length}
+                pastEventsCount={pastEvents.length}
+                alertRemindersCount={alertRemindersCount}
               />
             </aside>
           </div>
@@ -574,11 +714,13 @@ function DashboardPage() {
       {selectedEventForReminder && (
         <CreateReminderModal
           eventTitle={selectedEventForReminder.title}
-          minutesBefore={reminderMinutesBefore}
+          selectedReminderValues={selectedReminderValues}
+          customMinutesBefore={customReminderMinutesBefore}
           errorMessage={createReminderErrorMessage}
           successMessage={createReminderSuccessMessage}
           isLoading={isCreatingReminder}
-          onMinutesBeforeChange={setReminderMinutesBefore}
+          onTogglePreset={handleToggleReminderPreset}
+          onCustomMinutesBeforeChange={setCustomReminderMinutesBefore}
           onClose={closeReminderModal}
           onSubmit={handleCreateReminder}
         />
@@ -606,4 +748,5 @@ function getUserInitials(name: string) {
 
   return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
 }
+
 export default DashboardPage;
