@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Bell,
   CalendarDays,
-  CheckCircle2,
   Clock3,
   Lock,
   Mail,
