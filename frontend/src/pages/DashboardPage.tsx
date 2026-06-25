@@ -1,6 +1,5 @@
 import type { FormEvent, ReactNode } from "react";
-import { useRef } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -10,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Edit3,
   FileText,
   Grid2X2,
   Home,
@@ -18,15 +18,19 @@ import {
   Plus,
   Search,
   Settings,
+  Trash2,
   X,
 } from "lucide-react";
 
 import { api } from "../services/api";
 import {
   createEvent,
+  deleteEvent,
   getEvents,
+  updateEvent,
   type CreateEventData,
   type LifeHubEvent,
+  type UpdateEventData,
 } from "../services/eventService";
 import { createEventReminder } from "../services/reminderService";
 import {
@@ -129,6 +133,22 @@ function DashboardPage() {
   const [createReminderSuccessMessage, setCreateReminderSuccessMessage] =
     useState("");
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
+
+  const [selectedEventForEdit, setSelectedEventForEdit] =
+    useState<LifeHubEvent | null>(null);
+  const [editEventTitle, setEditEventTitle] = useState("");
+  const [editEventDescription, setEditEventDescription] = useState("");
+  const [editEventDate, setEditEventDate] = useState("");
+  const [editEventStartTime, setEditEventStartTime] = useState("");
+  const [editEventEndTime, setEditEventEndTime] = useState("");
+  const [editEventErrorMessage, setEditEventErrorMessage] = useState("");
+  const [isEditingEvent, setIsEditingEvent] = useState(false);
+
+  const [selectedEventForDelete, setSelectedEventForDelete] =
+    useState<LifeHubEvent | null>(null);
+  const [deleteEventErrorMessage, setDeleteEventErrorMessage] = useState("");
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+
   const playedReminderIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
@@ -164,34 +184,34 @@ function DashboardPage() {
     }
   }
 
-async function loadDueReminders() {
-  setIsDueRemindersLoading(true);
-  setDueRemindersErrorMessage("");
+  async function loadDueReminders() {
+    setIsDueRemindersLoading(true);
+    setDueRemindersErrorMessage("");
 
-  try {
-    const remindersData = await getDueReminders();
+    try {
+      const remindersData = await getDueReminders();
 
-    setDueReminders(remindersData);
+      setDueReminders(remindersData);
 
-    const newReminders = remindersData.filter(
-      (reminder) => !playedReminderIdsRef.current.has(reminder.reminder_id)
-    );
+      const newReminders = remindersData.filter(
+        (reminder) => !playedReminderIdsRef.current.has(reminder.reminder_id)
+      );
 
-    newReminders.forEach((reminder) => {
-      playedReminderIdsRef.current.add(reminder.reminder_id);
+      newReminders.forEach((reminder) => {
+        playedReminderIdsRef.current.add(reminder.reminder_id);
 
-      try {
-        playNotificationSound(reminder.sound_type);
-      } catch {
-        console.warn("O navegador bloqueou o som da notificação.");
-      }
-    });
-  } catch {
-    setDueRemindersErrorMessage("Não foi possível carregar os lembretes.");
-  } finally {
-    setIsDueRemindersLoading(false);
+        try {
+          playNotificationSound(reminder.sound_type);
+        } catch {
+          console.warn("O navegador bloqueou o som da notificação.");
+        }
+      });
+    } catch {
+      setDueRemindersErrorMessage("Não foi possível carregar os lembretes.");
+    } finally {
+      setIsDueRemindersLoading(false);
+    }
   }
-}
 
   async function handleCreateEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -299,6 +319,97 @@ async function loadDueReminders() {
     }
   }
 
+  async function handleUpdateEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setEditEventErrorMessage("");
+
+    if (!selectedEventForEdit) {
+      setEditEventErrorMessage("Nenhum evento selecionado.");
+      return;
+    }
+
+    if (!editEventTitle.trim()) {
+      setEditEventErrorMessage("O título do evento é obrigatório.");
+      return;
+    }
+
+    if (!editEventDate) {
+      setEditEventErrorMessage("A data do evento é obrigatória.");
+      return;
+    }
+
+    if (!editEventStartTime) {
+      setEditEventErrorMessage("O horário de início é obrigatório.");
+      return;
+    }
+
+    if (editEventEndTime && editEventEndTime <= editEventStartTime) {
+      setEditEventErrorMessage(
+        "O horário de término deve ser maior que o horário de início."
+      );
+      return;
+    }
+
+    const eventData: UpdateEventData = {
+      title: editEventTitle.trim(),
+      description: editEventDescription.trim() || null,
+      event_date: editEventDate,
+      start_time: editEventStartTime,
+      end_time: editEventEndTime || null,
+    };
+
+    setIsEditingEvent(true);
+
+    try {
+      const updatedEvent = await updateEvent(selectedEventForEdit.id, eventData);
+
+      setEvents((currentEvents) =>
+        currentEvents.map((currentEvent) =>
+          currentEvent.id === updatedEvent.id ? updatedEvent : currentEvent
+        )
+      );
+
+      closeEditEventModal();
+      loadDueReminders();
+    } catch {
+      setEditEventErrorMessage("Não foi possível atualizar o evento.");
+    } finally {
+      setIsEditingEvent(false);
+    }
+  }
+
+  async function handleDeleteEvent() {
+    if (!selectedEventForDelete) {
+      return;
+    }
+
+    setDeleteEventErrorMessage("");
+    setIsDeletingEvent(true);
+
+    try {
+      await deleteEvent(selectedEventForDelete.id);
+
+      setEvents((currentEvents) =>
+        currentEvents.filter(
+          (currentEvent) => currentEvent.id !== selectedEventForDelete.id
+        )
+      );
+
+      setDueReminders((currentReminders) =>
+        currentReminders.filter(
+          (reminder) => reminder.event_id !== selectedEventForDelete.id
+        )
+      );
+
+      setSelectedEventForDelete(null);
+    } catch {
+      setDeleteEventErrorMessage("Não foi possível excluir o evento.");
+    } finally {
+      setIsDeletingEvent(false);
+    }
+  }
+
   async function handleMarkReminderAsSent(reminderId: number) {
     try {
       await markReminderAsSent(reminderId);
@@ -329,6 +440,36 @@ async function loadDueReminders() {
     setCreateReminderSuccessMessage("");
   }
 
+  function openEditEventModal(event: LifeHubEvent) {
+    setSelectedEventForEdit(event);
+    setEditEventTitle(event.title);
+    setEditEventDescription(event.description ?? "");
+    setEditEventDate(event.event_date);
+    setEditEventStartTime(formatTime(event.start_time));
+    setEditEventEndTime(event.end_time ? formatTime(event.end_time) : "");
+    setEditEventErrorMessage("");
+  }
+
+  function closeEditEventModal() {
+    setSelectedEventForEdit(null);
+    setEditEventTitle("");
+    setEditEventDescription("");
+    setEditEventDate("");
+    setEditEventStartTime("");
+    setEditEventEndTime("");
+    setEditEventErrorMessage("");
+  }
+
+  function openDeleteEventModal(event: LifeHubEvent) {
+    setSelectedEventForDelete(event);
+    setDeleteEventErrorMessage("");
+  }
+
+  function closeDeleteEventModal() {
+    setSelectedEventForDelete(null);
+    setDeleteEventErrorMessage("");
+  }
+
   function handleLogout() {
     localStorage.removeItem("lifehub_token");
     navigate("/login");
@@ -338,12 +479,13 @@ async function loadDueReminders() {
   const userEmail = user?.email ?? "Conta LifeHUB";
   const userInitials = getUserInitials(userName);
 
-  const upcomingEvents = [...events].sort((firstEvent, secondEvent) => {
-    const firstDate = `${firstEvent.event_date}T${firstEvent.start_time}`;
-    const secondDate = `${secondEvent.event_date}T${secondEvent.start_time}`;
+  const upcomingEvents = events
+    .filter((event) => !isPastEvent(event))
+    .sort(sortEventsAscending);
 
-    return new Date(firstDate).getTime() - new Date(secondDate).getTime();
-  });
+  const pastEvents = events
+    .filter((event) => isPastEvent(event))
+    .sort(sortEventsDescending);
 
   const alertRemindersCount = dueReminders.filter(
     (reminder) => reminder.notification_level === "alert"
@@ -481,7 +623,7 @@ async function loadDueReminders() {
                   </button>
 
                   <h2 className="text-2xl font-bold tracking-tight">
-                    Junho 2024
+                    Agenda
                   </h2>
 
                   <button className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100">
@@ -522,7 +664,12 @@ async function loadDueReminders() {
 
               <div className="mt-9">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-bold">Próximos eventos</h3>
+                  <div>
+                    <h3 className="text-lg font-bold">Próximos eventos</h3>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Eventos que ainda vão acontecer.
+                    </p>
+                  </div>
 
                   <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-500">
                     Ver todos
@@ -545,7 +692,7 @@ async function loadDueReminders() {
                   !eventsErrorMessage &&
                   upcomingEvents.length === 0 && (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
-                      Você ainda não possui eventos cadastrados.
+                      Nenhum próximo evento cadastrado.
                     </div>
                   )}
 
@@ -556,11 +703,51 @@ async function loadDueReminders() {
                       {upcomingEvents.map((event, index) => (
                         <EventCard
                           key={event.id}
-                          icon="calendar"
                           title={event.title}
                           time={formatEventTime(event)}
                           color={getEventCardColor(index)}
+                          isPast={false}
                           onCreateReminder={() => openReminderModal(event)}
+                          onEdit={() => openEditEventModal(event)}
+                          onDelete={() => openDeleteEventModal(event)}
+                        />
+                      ))}
+                    </div>
+                  )}
+              </div>
+
+              <div className="mt-10">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold">Histórico</h3>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Eventos que já passaram.
+                    </p>
+                  </div>
+                </div>
+
+                {!isEventsLoading &&
+                  !eventsErrorMessage &&
+                  pastEvents.length === 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
+                      Nenhum evento antigo por enquanto.
+                    </div>
+                  )}
+
+                {!isEventsLoading &&
+                  !eventsErrorMessage &&
+                  pastEvents.length > 0 && (
+                    <div className="space-y-3">
+                      {pastEvents.map((event, index) => (
+                        <EventCard
+                          key={event.id}
+                          title={event.title}
+                          time={formatEventTime(event)}
+                          color={getEventCardColor(index)}
+                          isPast
+                          onCreateReminder={() => openReminderModal(event)}
+                          onEdit={() => openEditEventModal(event)}
+                          onDelete={() => openDeleteEventModal(event)}
                         />
                       ))}
                     </div>
@@ -646,10 +833,13 @@ async function loadDueReminders() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
-                  <SummaryCard label="Eventos" value={String(events.length)} />
                   <SummaryCard
-                    label="Lembretes"
-                    value={String(dueReminders.length)}
+                    label="Próximos"
+                    value={String(upcomingEvents.length)}
+                  />
+                  <SummaryCard
+                    label="Histórico"
+                    value={String(pastEvents.length)}
                   />
                   <SummaryCard
                     label="Alertas"
@@ -663,7 +853,8 @@ async function loadDueReminders() {
       </div>
 
       {isCreateEventModalOpen && (
-        <CreateEventModal
+        <EventFormModal
+          mode="create"
           title={newEventTitle}
           description={newEventDescription}
           eventDate={newEventDate}
@@ -681,6 +872,26 @@ async function loadDueReminders() {
         />
       )}
 
+      {selectedEventForEdit && (
+        <EventFormModal
+          mode="edit"
+          title={editEventTitle}
+          description={editEventDescription}
+          eventDate={editEventDate}
+          startTime={editEventStartTime}
+          endTime={editEventEndTime}
+          errorMessage={editEventErrorMessage}
+          isLoading={isEditingEvent}
+          onTitleChange={setEditEventTitle}
+          onDescriptionChange={setEditEventDescription}
+          onEventDateChange={setEditEventDate}
+          onStartTimeChange={setEditEventStartTime}
+          onEndTimeChange={setEditEventEndTime}
+          onClose={closeEditEventModal}
+          onSubmit={handleUpdateEvent}
+        />
+      )}
+
       {selectedEventForReminder && (
         <CreateReminderModal
           eventTitle={selectedEventForReminder.title}
@@ -691,6 +902,16 @@ async function loadDueReminders() {
           onMinutesBeforeChange={setReminderMinutesBefore}
           onClose={closeReminderModal}
           onSubmit={handleCreateReminder}
+        />
+      )}
+
+      {selectedEventForDelete && (
+        <DeleteEventModal
+          eventTitle={selectedEventForDelete.title}
+          errorMessage={deleteEventErrorMessage}
+          isLoading={isDeletingEvent}
+          onClose={closeDeleteEventModal}
+          onConfirm={handleDeleteEvent}
         />
       )}
     </main>
@@ -754,7 +975,8 @@ function DueReminderCard({
   );
 }
 
-function CreateEventModal({
+function EventFormModal({
+  mode,
   title,
   description,
   eventDate,
@@ -770,6 +992,7 @@ function CreateEventModal({
   onClose,
   onSubmit,
 }: {
+  mode: "create" | "edit";
   title: string;
   description: string;
   eventDate: string;
@@ -785,6 +1008,8 @@ function CreateEventModal({
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const isEditMode = mode === "edit";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-5 backdrop-blur-sm">
       <motion.div
@@ -796,13 +1021,15 @@ function CreateEventModal({
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-indigo-600">
-              Novo evento
+              {isEditMode ? "Editar evento" : "Novo evento"}
             </p>
             <h2 className="mt-1 text-2xl font-bold tracking-tight">
-              Criar compromisso
+              {isEditMode ? "Atualizar compromisso" : "Criar compromisso"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Adicione um evento à sua agenda do LifeHUB.
+              {isEditMode
+                ? "Atualize as informações do evento."
+                : "Adicione um evento à sua agenda do LifeHUB."}
             </p>
           </div>
 
@@ -905,7 +1132,13 @@ function CreateEventModal({
               disabled={isLoading}
               className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isLoading ? "Criando..." : "Criar evento"}
+              {isLoading
+                ? isEditMode
+                  ? "Salvando..."
+                  : "Criando..."
+                : isEditMode
+                  ? "Salvar alterações"
+                  : "Criar evento"}
             </button>
           </div>
         </form>
@@ -1042,6 +1275,76 @@ function CreateReminderModal({
   );
 }
 
+function DeleteEventModal({
+  eventTitle,
+  errorMessage,
+  isLoading,
+  onClose,
+  onConfirm,
+}: {
+  eventTitle: string;
+  errorMessage: string;
+  isLoading: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-5 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.25 }}
+        className="w-full max-w-md rounded-[2rem] border border-red-100 bg-white p-6 shadow-2xl shadow-slate-900/20"
+      >
+        <div className="mb-6 flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+            <Trash2 size={22} />
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-red-600">
+              Excluir evento
+            </p>
+            <h2 className="mt-1 text-2xl font-bold tracking-tight">
+              Tem certeza?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              O evento <strong>{eventTitle}</strong> será removido da sua
+              agenda.
+            </p>
+          </div>
+        </div>
+
+        {errorMessage && (
+          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            {errorMessage}
+          </div>
+        )}
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isLoading ? "Excluindo..." : "Excluir evento"}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function QuickReminderButton({
   label,
   value,
@@ -1157,45 +1460,84 @@ function EventCard({
   title,
   time,
   color,
-  icon,
+  isPast,
   onCreateReminder,
+  onEdit,
+  onDelete,
 }: {
   title: string;
   time: string;
   color: EventCardColor;
-  icon: "calendar" | "check" | "bell";
+  isPast: boolean;
   onCreateReminder: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
-      className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center"
+      className={`flex flex-col gap-4 rounded-2xl border p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center ${
+        isPast
+          ? "border-slate-200 bg-slate-50 opacity-80"
+          : "border-slate-200 bg-white"
+      }`}
     >
-      <IconBadge color={color} icon={icon} />
+      <IconBadge color={isPast ? "neutral" : color} icon="calendar" />
 
       <div className="flex-1">
-        <h4 className="font-bold text-slate-900">{title}</h4>
+        <div className="flex flex-wrap items-center gap-2">
+          <h4 className="font-bold text-slate-900">{title}</h4>
+
+          {isPast && (
+            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
+              Finalizado
+            </span>
+          )}
+        </div>
+
         <p className="mt-1 text-sm text-slate-500">{time}</p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {!isPast && (
+          <button
+            type="button"
+            onClick={onCreateReminder}
+            className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-100"
+          >
+            Adicionar lembrete
+          </button>
+        )}
+
         <button
           type="button"
-          onClick={onCreateReminder}
-          className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-100"
+          onClick={onEdit}
+          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
         >
-          Adicionar lembrete
+          <Edit3 size={15} />
+          Editar
         </button>
 
-        <span
-          className={`h-2.5 w-2.5 rounded-full ${
-            color === "primary"
-              ? "bg-indigo-600"
-              : color === "success"
-                ? "bg-emerald-500"
-                : "bg-red-500"
-          }`}
-        />
+        <button
+          type="button"
+          onClick={onDelete}
+          className="inline-flex items-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+        >
+          <Trash2 size={15} />
+          Excluir
+        </button>
+
+        {!isPast && (
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${
+              color === "primary"
+                ? "bg-indigo-600"
+                : color === "success"
+                  ? "bg-emerald-500"
+                  : "bg-red-500"
+            }`}
+          />
+        )}
       </div>
     </motion.div>
   );
@@ -1261,6 +1603,26 @@ function getUserInitials(name: string) {
   }
 
   return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+}
+
+function getEventDateTime(event: LifeHubEvent) {
+  return new Date(`${event.event_date}T${formatTime(event.start_time)}`);
+}
+
+function isPastEvent(event: LifeHubEvent) {
+  const eventEndTime = event.end_time
+    ? new Date(`${event.event_date}T${formatTime(event.end_time)}`)
+    : getEventDateTime(event);
+
+  return eventEndTime.getTime() < new Date().getTime();
+}
+
+function sortEventsAscending(firstEvent: LifeHubEvent, secondEvent: LifeHubEvent) {
+  return getEventDateTime(firstEvent).getTime() - getEventDateTime(secondEvent).getTime();
+}
+
+function sortEventsDescending(firstEvent: LifeHubEvent, secondEvent: LifeHubEvent) {
+  return getEventDateTime(secondEvent).getTime() - getEventDateTime(firstEvent).getTime();
 }
 
 function formatEventTime(event: LifeHubEvent) {
