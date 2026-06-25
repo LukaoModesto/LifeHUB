@@ -1,4 +1,5 @@
 import type { FormEvent, ReactNode } from "react";
+import { useRef } from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -33,6 +34,7 @@ import {
   markReminderAsSent,
   type DueReminder,
 } from "../services/dueReminderService";
+import { playNotificationSound } from "../services/notificationSoundService";
 
 type User = {
   id: number;
@@ -127,6 +129,7 @@ function DashboardPage() {
   const [createReminderSuccessMessage, setCreateReminderSuccessMessage] =
     useState("");
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
+  const playedReminderIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -161,19 +164,34 @@ function DashboardPage() {
     }
   }
 
-  async function loadDueReminders() {
-    setIsDueRemindersLoading(true);
-    setDueRemindersErrorMessage("");
+async function loadDueReminders() {
+  setIsDueRemindersLoading(true);
+  setDueRemindersErrorMessage("");
 
-    try {
-      const remindersData = await getDueReminders();
-      setDueReminders(remindersData);
-    } catch {
-      setDueRemindersErrorMessage("Não foi possível carregar os lembretes.");
-    } finally {
-      setIsDueRemindersLoading(false);
-    }
+  try {
+    const remindersData = await getDueReminders();
+
+    setDueReminders(remindersData);
+
+    const newReminders = remindersData.filter(
+      (reminder) => !playedReminderIdsRef.current.has(reminder.reminder_id)
+    );
+
+    newReminders.forEach((reminder) => {
+      playedReminderIdsRef.current.add(reminder.reminder_id);
+
+      try {
+        playNotificationSound(reminder.sound_type);
+      } catch {
+        console.warn("O navegador bloqueou o som da notificação.");
+      }
+    });
+  } catch {
+    setDueRemindersErrorMessage("Não foi possível carregar os lembretes.");
+  } finally {
+    setIsDueRemindersLoading(false);
   }
+}
 
   async function handleCreateEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
