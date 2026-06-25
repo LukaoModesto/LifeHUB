@@ -10,17 +10,13 @@ import {
   ChevronRight,
   Clock3,
   Edit3,
-  FileText,
-  Grid2X2,
-  Home,
-  LogOut,
-  Menu,
-  Plus,
-  Search,
   Settings,
   Trash2,
   X,
 } from "lucide-react";
+
+import Sidebar from "../components/dashboard/Sidebar";
+import Topbar from "../components/dashboard/Topbar";
 
 import { api } from "../services/api";
 import {
@@ -494,120 +490,18 @@ function DashboardPage() {
   return (
     <main className="min-h-screen bg-[#f8fafc] text-slate-900">
       <div className="flex min-h-screen">
-        <aside className="hidden w-72 border-r border-slate-200 bg-white px-5 py-6 xl:block">
-          <div className="mb-10 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
-              <CalendarDays size={22} />
-            </div>
-
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">LifeHUB</h1>
-              <p className="text-xs font-medium text-slate-400">
-                Agenda inteligente
-              </p>
-            </div>
-          </div>
-
-          <nav className="space-y-2">
-            <SidebarItem icon={<Home size={18} />} label="Início" />
-            <SidebarItem icon={<Grid2X2 size={18} />} label="Dashboard" />
-            <SidebarItem
-              icon={<CalendarDays size={18} />}
-              label="Calendário"
-              active
-            />
-            <SidebarItem icon={<CheckCircle2 size={18} />} label="Tarefas" />
-            <SidebarItem icon={<Bell size={18} />} label="Notificações" />
-            <SidebarItem icon={<FileText size={18} />} label="Documentos" />
-            <SidebarItem icon={<Settings size={18} />} label="Configurações" />
-          </nav>
-
-          <div className="mt-12 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
-              <CalendarDays size={24} />
-            </div>
-
-            <p className="text-center text-sm leading-6 text-slate-500">
-              Organize seu dia e mantenha sua rotina sob controle.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setIsCreateEventModalOpen(true)}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
-            >
-              <Plus size={17} />
-              Novo evento
-            </button>
-          </div>
-        </aside>
+        <Sidebar onCreateEvent={() => setIsCreateEventModalOpen(true)} />
 
         <section className="flex-1">
-          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/85 px-5 py-4 backdrop-blur-xl lg:px-8">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 xl:hidden">
-                <button className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-600">
-                  <Menu size={20} />
-                </button>
-
-                <div>
-                  <h1 className="font-bold">LifeHUB</h1>
-                  <p className="text-xs text-slate-400">Calendário</p>
-                </div>
-              </div>
-
-              <div className="hidden items-center gap-8 xl:flex">
-                <TopNavItem label="Dashboard" />
-                <TopNavItem label="Calendário" active />
-                <TopNavItem label="Tarefas" />
-                <TopNavItem label="Notificações" />
-              </div>
-
-              <div className="ml-auto flex items-center gap-3">
-                <button className="hidden rounded-2xl border border-slate-200 bg-white p-3 text-slate-600 transition hover:bg-slate-50 sm:block">
-                  <Search size={20} />
-                </button>
-
-                <button className="relative rounded-2xl border border-slate-200 bg-white p-3 text-slate-600 transition hover:bg-slate-50">
-                  <Bell size={20} />
-                  {dueReminders.length > 0 && (
-                    <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsCreateEventModalOpen(true)}
-                  className="hidden items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 lg:inline-flex"
-                >
-                  <Plus size={17} />
-                  Novo evento
-                </button>
-
-                <div className="hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 md:flex">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                    {userInitials}
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {isUserLoading ? "Carregando..." : userName}
-                    </p>
-                    <p className="text-xs text-slate-400">{userEmail}</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                    title="Sair"
-                  >
-                    <LogOut size={17} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </header>
+          <Topbar
+            userName={userName}
+            userEmail={userEmail}
+            userInitials={userInitials}
+            isUserLoading={isUserLoading}
+            dueRemindersCount={dueReminders.length}
+            onCreateEvent={() => setIsCreateEventModalOpen(true)}
+            onLogout={handleLogout}
+          />
 
           <div className="grid gap-6 p-5 lg:p-8 2xl:grid-cols-[1fr_420px]">
             <motion.section
@@ -1365,45 +1259,6 @@ function QuickReminderButton({
   );
 }
 
-function SidebarItem({
-  icon,
-  label,
-  active,
-}: {
-  icon: ReactNode;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <button
-      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-        active
-          ? "bg-indigo-50 text-indigo-600"
-          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-function TopNavItem({ label, active }: { label: string; active?: boolean }) {
-  return (
-    <button
-      className={`relative px-2 py-2 text-sm font-semibold transition ${
-        active ? "text-indigo-600" : "text-slate-500 hover:text-slate-900"
-      }`}
-    >
-      {label}
-
-      {active && (
-        <span className="absolute -bottom-[18px] left-0 h-0.5 w-full rounded-full bg-indigo-600" />
-      )}
-    </button>
-  );
-}
-
 function ViewButton({ label, active }: { label: string; active?: boolean }) {
   return (
     <button
@@ -1617,12 +1472,24 @@ function isPastEvent(event: LifeHubEvent) {
   return eventEndTime.getTime() < new Date().getTime();
 }
 
-function sortEventsAscending(firstEvent: LifeHubEvent, secondEvent: LifeHubEvent) {
-  return getEventDateTime(firstEvent).getTime() - getEventDateTime(secondEvent).getTime();
+function sortEventsAscending(
+  firstEvent: LifeHubEvent,
+  secondEvent: LifeHubEvent
+) {
+  return (
+    getEventDateTime(firstEvent).getTime() -
+    getEventDateTime(secondEvent).getTime()
+  );
 }
 
-function sortEventsDescending(firstEvent: LifeHubEvent, secondEvent: LifeHubEvent) {
-  return getEventDateTime(secondEvent).getTime() - getEventDateTime(firstEvent).getTime();
+function sortEventsDescending(
+  firstEvent: LifeHubEvent,
+  secondEvent: LifeHubEvent
+) {
+  return (
+    getEventDateTime(secondEvent).getTime() -
+    getEventDateTime(firstEvent).getTime()
+  );
 }
 
 function formatEventTime(event: LifeHubEvent) {
