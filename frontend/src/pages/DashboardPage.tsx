@@ -1,16 +1,8 @@
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  Bell,
-  CalendarDays,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Clock3,
-  Settings,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 
 import Sidebar from "../components/dashboard/Sidebar";
 import Topbar from "../components/dashboard/Topbar";
@@ -18,6 +10,7 @@ import EventCard from "../components/dashboard/EventCard";
 import EventFormModal from "../components/dashboard/EventFormModal";
 import DeleteEventModal from "../components/dashboard/DeleteEventModal";
 import CreateReminderModal from "../components/dashboard/CreateReminderModal";
+import NotificationPanel from "../components/dashboard/NotificationPanel";
 
 import { api } from "../services/api";
 import {
@@ -651,66 +644,13 @@ function DashboardPage() {
             </motion.section>
 
             <aside className="space-y-6">
-              <motion.section
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05, duration: 0.35 }}
-                className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6"
-              >
-                <div className="mb-7 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-400">
-                      Central
-                    </p>
-                    <h3 className="text-xl font-bold">Notificações</h3>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={loadDueReminders}
-                    className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                    title="Atualizar lembretes"
-                  >
-                    <Settings size={18} />
-                  </button>
-                </div>
-
-                {isDueRemindersLoading && (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
-                    Carregando lembretes...
-                  </div>
-                )}
-
-                {!isDueRemindersLoading && dueRemindersErrorMessage && (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-600">
-                    {dueRemindersErrorMessage}
-                  </div>
-                )}
-
-                {!isDueRemindersLoading &&
-                  !dueRemindersErrorMessage &&
-                  dueReminders.length === 0 && (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
-                      Nenhum lembrete pendente no momento.
-                    </div>
-                  )}
-
-                {!isDueRemindersLoading &&
-                  !dueRemindersErrorMessage &&
-                  dueReminders.length > 0 && (
-                    <NotificationGroup title="Agora">
-                      {dueReminders.map((reminder) => (
-                        <DueReminderCard
-                          key={reminder.reminder_id}
-                          reminder={reminder}
-                          onMarkAsSeen={() =>
-                            handleMarkReminderAsSent(reminder.reminder_id)
-                          }
-                        />
-                      ))}
-                    </NotificationGroup>
-                  )}
-              </motion.section>
+              <NotificationPanel
+                reminders={dueReminders}
+                isLoading={isDueRemindersLoading}
+                errorMessage={dueRemindersErrorMessage}
+                onRefresh={loadDueReminders}
+                onMarkAsSeen={handleMarkReminderAsSent}
+              />
 
               <motion.section
                 initial={{ opacity: 0, y: 14 }}
@@ -813,63 +753,6 @@ function DashboardPage() {
   );
 }
 
-function DueReminderCard({
-  reminder,
-  onMarkAsSeen,
-}: {
-  reminder: DueReminder;
-  onMarkAsSeen: () => void;
-}) {
-  const isAlert = reminder.notification_level === "alert";
-
-  return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className={`rounded-2xl border p-4 shadow-sm transition hover:shadow-md ${
-        isAlert ? "border-red-200 bg-red-50" : "border-slate-200 bg-white"
-      }`}
-    >
-      <div className="flex items-start gap-4">
-        <IconBadge color={isAlert ? "danger" : "primary"} icon="bell" />
-
-        <div className="flex-1">
-          <div className="mb-1 flex items-center justify-between gap-3">
-            <h4 className="font-bold text-slate-900">
-              {reminder.event_title}
-            </h4>
-
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                isAlert
-                  ? "bg-red-100 text-red-600"
-                  : "bg-indigo-100 text-indigo-600"
-              }`}
-            >
-              {isAlert ? "Alerta" : "Normal"}
-            </span>
-          </div>
-
-          <p className="text-sm text-slate-500">
-            Evento em {formatDateTime(reminder.event_datetime)}
-          </p>
-
-          <p className="mt-1 text-xs text-slate-400">
-            Aviso configurado para {reminder.minutes_before} min antes.
-          </p>
-
-          <button
-            type="button"
-            onClick={onMarkAsSeen}
-            className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-600"
-          >
-            Marcar como visto
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 function ViewButton({ label, active }: { label: string; active?: boolean }) {
   return (
     <button
@@ -919,49 +802,6 @@ function CalendarDay({
         />
       )}
     </button>
-  );
-}
-
-function NotificationGroup({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="mb-7 last:mb-0">
-      <p className="mb-3 text-sm font-bold text-slate-700">{title}</p>
-      <div className="space-y-3">{children}</div>
-    </div>
-  );
-}
-
-function IconBadge({
-  color,
-  icon,
-}: {
-  color: "primary" | "success" | "danger" | "neutral";
-  icon: "calendar" | "check" | "bell";
-}) {
-  const colorClasses: Record<
-    "primary" | "success" | "danger" | "neutral",
-    string
-  > = {
-    primary: "bg-indigo-100 text-indigo-600",
-    success: "bg-emerald-100 text-emerald-600",
-    danger: "bg-red-100 text-red-600",
-    neutral: "bg-slate-100 text-slate-500",
-  };
-
-  return (
-    <div
-      className={`flex h-12 w-12 items-center justify-center rounded-2xl ${colorClasses[color]}`}
-    >
-      {icon === "calendar" && <CalendarDays size={22} />}
-      {icon === "check" && <CheckCircle2 size={22} />}
-      {icon === "bell" && <Bell size={22} />}
-    </div>
   );
 }
 
@@ -1036,18 +876,6 @@ function formatDate(date: string) {
   const [year, month, day] = date.split("-");
 
   return `${day}/${month}/${year}`;
-}
-
-function formatDateTime(dateTime: string) {
-  const date = new Date(dateTime);
-
-  return date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function getEventCardColor(index: number): EventCardColor {
