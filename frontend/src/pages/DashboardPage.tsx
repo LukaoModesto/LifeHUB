@@ -134,6 +134,8 @@ function DashboardPage() {
     getBrowserNotificationPermission()
   );
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     async function loadDashboardData() {
       try {
@@ -706,13 +708,15 @@ async function handleRequestBrowserNotificationPermission() {
   const userEmail = user?.email ?? "Conta LifeHUB";
   const userInitials = getUserInitials(userName);
 
-  const upcomingEvents = events
-    .filter((event) => !isPastEvent(event))
-    .sort(sortEventsAscending);
+  const searchedEvents = filterEventsBySearch(events, searchQuery);
 
-  const pastEvents = events
-    .filter((event) => isPastEvent(event))
-    .sort(sortEventsDescending);
+  const upcomingEvents = searchedEvents
+  .filter((event) => !isPastEvent(event))
+  .sort(sortEventsAscending);
+
+  const pastEvents = searchedEvents
+  .filter((event) => isPastEvent(event))
+  .sort(sortEventsDescending);
 
   const alertRemindersCount = dueReminders.filter(
     (reminder) => reminder.notification_level === "alert"
@@ -736,14 +740,16 @@ async function handleRequestBrowserNotificationPermission() {
 
         <section className="flex-1">
           <Topbar
-            userName={userName}
-            userEmail={userEmail}
-            userInitials={userInitials}
-            isUserLoading={isUserLoading}
-            onOpenSidebar={openSidebar}
-            dueRemindersCount={dueReminders.length}
-            onCreateEvent={() => openCreateEventModal()}
-            onLogout={handleLogout}
+          userName={userName}
+          userEmail={userEmail}
+          userInitials={userInitials}
+          isUserLoading={isUserLoading}
+          dueRemindersCount={dueReminders.length}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          onOpenSidebar={openSidebar}
+          onCreateEvent={() => openCreateEventModal()}
+          onLogout={handleLogout}
           />
 
           <div className="grid gap-6 p-5 lg:p-8 2xl:grid-cols-[1fr_420px]">
@@ -864,4 +870,42 @@ function getUserInitials(name: string) {
   return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
 }
 
+function filterEventsBySearch(events: LifeHubEvent[], searchQuery: string) {
+  const normalizedSearchQuery = normalizeSearchText(searchQuery);
+
+  if (!normalizedSearchQuery) {
+    return events;
+  }
+
+  return events.filter((event) => {
+    const searchableText = normalizeSearchText(
+      [
+        event.title,
+        event.description,
+        event.event_date,
+        formatDateForSearch(event.event_date),
+        event.start_time,
+        event.end_time,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
+
+    return searchableText.includes(normalizedSearchQuery);
+  });
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function formatDateForSearch(date: string) {
+  const [year, month, day] = date.split("-");
+
+  return `${day}/${month}/${year}`;
+}
 export default DashboardPage;

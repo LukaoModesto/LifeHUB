@@ -1,4 +1,4 @@
-import { Bell, CalendarPlus, LogOut, Menu, Search } from "lucide-react";
+import { Bell, CalendarPlus, LogOut, Menu, Search, X } from "lucide-react";
 
 type TopbarProps = {
   userName: string;
@@ -6,6 +6,8 @@ type TopbarProps = {
   userInitials: string;
   isUserLoading: boolean;
   dueRemindersCount: number;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
   onOpenSidebar: () => void;
   onCreateEvent: () => void;
   onLogout: () => void;
@@ -17,6 +19,8 @@ function Topbar({
   userInitials,
   isUserLoading,
   dueRemindersCount,
+  searchQuery,
+  onSearchQueryChange,
   onOpenSidebar,
   onCreateEvent,
   onLogout,
@@ -24,25 +28,37 @@ function Topbar({
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 px-5 py-4 backdrop-blur-xl lg:px-8">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <button
             type="button"
             onClick={onOpenSidebar}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 xl:hidden"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 xl:hidden"
             aria-label="Abrir menu"
           >
             <Menu size={22} />
           </button>
 
-          <div className="hidden min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 md:flex md:w-[360px] md:items-center md:gap-3">
-            <Search size={18} className="text-slate-400" />
+          <div className="hidden min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-indigo-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 md:flex md:w-[360px] md:items-center md:gap-3">
+            <Search size={18} className="shrink-0 text-slate-400" />
 
             <input
               type="text"
-              placeholder="Buscar eventos, tarefas..."
-              disabled
-              className="w-full bg-transparent text-sm font-medium text-slate-500 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+              value={searchQuery}
+              onChange={(event) => onSearchQueryChange(event.target.value)}
+              placeholder="Buscar eventos..."
+              className="w-full bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
             />
+
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => onSearchQueryChange("")}
+                className="rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Limpar busca"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
 
           <div className="min-w-0 md:hidden">
@@ -56,7 +72,7 @@ function Topbar({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <button
             type="button"
             onClick={onCreateEvent}
@@ -105,6 +121,29 @@ function Topbar({
             <LogOut size={19} />
           </button>
         </div>
+      </div>
+
+      <div className="mt-4 flex rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-indigo-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 md:hidden">
+        <Search size={18} className="mr-3 shrink-0 text-slate-400" />
+
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(event) => onSearchQueryChange(event.target.value)}
+          placeholder="Buscar eventos..."
+          className="w-full bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
+        />
+
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => onSearchQueryChange("")}
+            className="ml-2 rounded-xl p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Limpar busca"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
     </header>
   );
