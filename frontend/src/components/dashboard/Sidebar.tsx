@@ -9,16 +9,27 @@ import {
   Target,
   X,
 } from "lucide-react";
+import type { ReactNode } from "react";
+
+type ActiveMenuItem = "dashboard" | "calendar" | "reminders";
 
 type SidebarProps = {
   isSidebarOpen: boolean;
+  activeMenuItem: ActiveMenuItem;
   onCloseSidebar: () => void;
+  onGoToDashboard: () => void;
+  onGoToCalendar: () => void;
+  onGoToReminders: () => void;
   onCreateEvent: () => void;
 };
 
 function Sidebar({
   isSidebarOpen,
+  activeMenuItem,
   onCloseSidebar,
+  onGoToDashboard,
+  onGoToCalendar,
+  onGoToReminders,
   onCreateEvent,
 }: SidebarProps) {
   return (
@@ -74,9 +85,26 @@ function Sidebar({
         </button>
 
         <nav className="space-y-2">
-          <SidebarItem icon={<Home size={19} />} label="Dashboard" active />
-          <SidebarItem icon={<CalendarDays size={19} />} label="Calendário" />
-          <SidebarItem icon={<Clock3 size={19} />} label="Lembretes" />
+          <SidebarItem
+            icon={<Home size={19} />}
+            label="Dashboard"
+            active={activeMenuItem === "dashboard"}
+            onClick={onGoToDashboard}
+          />
+
+          <SidebarItem
+            icon={<CalendarDays size={19} />}
+            label="Calendário"
+            active={activeMenuItem === "calendar"}
+            onClick={onGoToCalendar}
+          />
+
+          <SidebarItem
+            icon={<Clock3 size={19} />}
+            label="Lembretes"
+            active={activeMenuItem === "reminders"}
+            onClick={onGoToReminders}
+          />
 
           <SidebarItem
             icon={<CheckSquare size={19} />}
@@ -114,15 +142,18 @@ function SidebarItem({
   label,
   active,
   disabled,
+  onClick,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   active?: boolean;
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       disabled={disabled}
       className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${
         active

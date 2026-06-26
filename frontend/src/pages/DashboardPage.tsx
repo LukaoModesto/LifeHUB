@@ -114,6 +114,13 @@ function DashboardPage() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const dashboardRef = useRef<HTMLDivElement | null>(null);
+  const calendarRef = useRef<HTMLDivElement | null>(null);
+  const remindersRef = useRef<HTMLDivElement | null>(null);
+  const [activeMenuItem, setActiveMenuItem] = useState<
+  "dashboard" | "calendar" | "reminders"
+  >("dashboard");
+
   useEffect(() => {
     async function loadDashboardData() {
       try {
@@ -641,6 +648,36 @@ function closeSidebar() {
   setIsSidebarOpen(false);
 }
 
+function scrollToDashboard() {
+  setActiveMenuItem("dashboard");
+  closeSidebar();
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
+}
+
+function scrollToCalendar() {
+  setActiveMenuItem("calendar");
+  closeSidebar();
+
+  calendarRef.current?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
+function scrollToReminders() {
+  setActiveMenuItem("reminders");
+  closeSidebar();
+
+  remindersRef.current?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
   const userName = user?.name ?? "Usuário";
   const userEmail = user?.email ?? "Conta LifeHUB";
   const userInitials = getUserInitials(userName);
@@ -658,11 +695,15 @@ function closeSidebar() {
   ).length;
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-slate-900">
+    <main ref={dashboardRef} className="min-h-screen bg-[#f8fafc] text-slate-900">
       <div className="flex min-h-screen">
         <Sidebar
-        isSidebarOpen={isSidebarOpen} 
-        onCloseSidebar={closeSidebar} 
+        isSidebarOpen={isSidebarOpen}
+        activeMenuItem={activeMenuItem}
+        onCloseSidebar={closeSidebar}
+        onGoToDashboard={scrollToDashboard}
+        onGoToCalendar={scrollToCalendar}
+        onGoToReminders={scrollToReminders}
         onCreateEvent={() => {
           closeSidebar();
           openCreateEventModal();
@@ -682,26 +723,30 @@ function closeSidebar() {
           />
 
           <div className="grid gap-6 p-5 lg:p-8 2xl:grid-cols-[1fr_420px]">
-            <CalendarSection
-            upcomingEvents={upcomingEvents}
-            pastEvents={pastEvents}
-            eventReminderCounts={eventReminderCounts}
-            isEventsLoading={isEventsLoading}
-            eventsErrorMessage={eventsErrorMessage}
-            onCreateEventForDate={openCreateEventModal}
-            onCreateReminder={openReminderModal}
-            onEditEvent={openEditEventModal}
-            onDeleteEvent={openDeleteEventModal}
-            />
+            <div ref={calendarRef} className="scroll-mt-24">
+              <CalendarSection
+              upcomingEvents={upcomingEvents}
+              pastEvents={pastEvents}
+              eventReminderCounts={eventReminderCounts}
+              isEventsLoading={isEventsLoading}
+              eventsErrorMessage={eventsErrorMessage}
+              onCreateEventForDate={openCreateEventModal}
+              onCreateReminder={openReminderModal}
+              onEditEvent={openEditEventModal}
+              onDeleteEvent={openDeleteEventModal}
+              />
+              </div>
 
             <aside className="space-y-6">
-              <NotificationPanel
+              <div ref={remindersRef} className="scroll-mt-24">
+                <NotificationPanel
                 reminders={dueReminders}
                 isLoading={isDueRemindersLoading}
                 errorMessage={dueRemindersErrorMessage}
                 onRefresh={loadDueReminders}
                 onMarkAsSeen={handleMarkReminderAsSent}
-              />
+                />
+                </div>
 
               <SummaryPanel
                 upcomingEventsCount={upcomingEvents.length}
