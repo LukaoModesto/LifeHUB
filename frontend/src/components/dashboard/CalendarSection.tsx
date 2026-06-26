@@ -6,15 +6,12 @@ import DayEventsModal from "./DayEventsModal";
 import EventCard from "./EventCard";
 import type { LifeHubEvent } from "../../services/eventService";
 
-type CalendarDotColor = "primary" | "success" | "danger";
-
 type CalendarDayItem = {
   date: Date;
   day: number;
   muted: boolean;
   isToday: boolean;
-  hasEvent: boolean;
-  dot?: CalendarDotColor;
+  eventCount: number;
 };
 
 type EventCardColor = "primary" | "success" | "danger";
@@ -155,7 +152,7 @@ function CalendarSection({
               muted={item.muted}
               selected={selectedDate ? isSameDate(item.date, selectedDate) : false}
               isToday={item.isToday}
-              dot={item.hasEvent ? item.dot : undefined}
+              eventCount={item.eventCount}
               onSelect={() => handleSelectDate(item.date)}
             />
           ))}
@@ -311,26 +308,27 @@ function CalendarDay({
   muted,
   selected,
   isToday,
-  dot,
+  eventCount,
   onSelect,
 }: {
   day: number;
   muted: boolean;
   selected: boolean;
   isToday: boolean;
-  dot?: CalendarDotColor;
+  eventCount: number;
   onSelect: () => void;
 }) {
-  const dotColor: Record<CalendarDotColor, string> = {
-    primary: "bg-indigo-600",
-    success: "bg-emerald-500",
-    danger: "bg-red-500",
-  };
+  const hasEvents = eventCount > 0;
 
   return (
     <button
       type="button"
       onClick={onSelect}
+      title={
+        hasEvents
+          ? `${eventCount} ${eventCount === 1 ? "evento" : "eventos"}`
+          : "Nenhum evento"
+      }
       className={`relative flex h-14 items-center justify-center rounded-2xl text-sm font-semibold transition ${
         selected
           ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25"
@@ -343,14 +341,18 @@ function CalendarDay({
     >
       {day}
 
-      {dot && !selected && (
+      {hasEvents && (
         <span
-          className={`absolute bottom-2 h-1.5 w-1.5 rounded-full ${dotColor[dot]}`}
-        />
-      )}
-
-      {dot && selected && (
-        <span className="absolute bottom-2 h-1.5 w-1.5 rounded-full bg-white" />
+          className={`absolute bottom-1.5 right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+            selected
+              ? "bg-white text-indigo-600"
+              : muted
+                ? "bg-slate-200 text-slate-500"
+                : "bg-indigo-600 text-white"
+          }`}
+        >
+          {eventCount}
+        </span>
       )}
     </button>
   );
@@ -378,17 +380,16 @@ function buildCalendarDays(
 
     currentDate.setDate(firstCalendarDate.getDate() + index);
 
-    const hasEvent = events.some((event) =>
+    const eventCount = events.filter((event) =>
       isSameDate(parseEventDate(event.event_date), currentDate)
-    );
+    ).length;
 
     calendarDays.push({
       date: currentDate,
       day: currentDate.getDate(),
       muted: currentDate.getMonth() !== month,
       isToday: isSameDate(currentDate, today),
-      hasEvent,
-      dot: getDotColorByDay(currentDate.getDate()),
+      eventCount,
     });
   }
 
@@ -450,12 +451,6 @@ function getEventCardColor(index: number): EventCardColor {
   const colors: EventCardColor[] = ["primary", "success", "danger"];
 
   return colors[index % colors.length];
-}
-
-function getDotColorByDay(day: number): CalendarDotColor {
-  const colors: CalendarDotColor[] = ["primary", "success", "danger"];
-
-  return colors[day % colors.length];
 }
 
 export default CalendarSection;
