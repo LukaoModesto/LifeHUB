@@ -10,6 +10,12 @@ import CreateReminderModal from "../components/dashboard/CreateReminderModal";
 import NotificationPanel from "../components/dashboard/NotificationPanel";
 import SummaryPanel from "../components/dashboard/SummaryPanel";
 import CalendarSection from "../components/dashboard/CalendarSection";
+import {
+  getBrowserNotificationPermission,
+  requestBrowserNotificationPermission,
+  showBrowserNotification,
+  type BrowserNotificationPermission,
+} from "../services/browserNotificationService";
 
 import {
   formatTime,
@@ -121,6 +127,13 @@ function DashboardPage() {
   "dashboard" | "calendar" | "reminders"
   >("dashboard");
 
+  const [
+    browserNotificationPermission,
+    setBrowserNotificationPermission,
+  ] = useState<BrowserNotificationPermission>(() =>
+    getBrowserNotificationPermission()
+  );
+
   useEffect(() => {
     async function loadDashboardData() {
       try {
@@ -230,10 +243,15 @@ function DashboardPage() {
       newReminders.forEach((reminder) => {
         try {
           playNotificationSound(reminder.sound_type);
-          playedReminderIdsRef.current.add(reminder.reminder_id);
         } catch {
           console.warn("O navegador bloqueou o som da notificação.");
         }
+        showBrowserNotification({
+          title: "Lembrete do LifeHUB",
+          body: `${reminder.event_title} está chegando.`,
+          tag: `lifehub-reminder-${reminder.reminder_id}`
+        });
+        playedReminderIdsRef.current.add(reminder.reminder_id);
       });
     } catch {
       setDueRemindersErrorMessage("Não foi possível carregar os lembretes.");
@@ -678,6 +696,12 @@ function scrollToReminders() {
   });
 }
 
+async function handleRequestBrowserNotificationPermission() {
+  const permission = await requestBrowserNotificationPermission();
+
+  setBrowserNotificationPermission(permission);
+}
+
   const userName = user?.name ?? "Usuário";
   const userEmail = user?.email ?? "Conta LifeHUB";
   const userInitials = getUserInitials(userName);
@@ -743,6 +767,10 @@ function scrollToReminders() {
                 reminders={dueReminders}
                 isLoading={isDueRemindersLoading}
                 errorMessage={dueRemindersErrorMessage}
+                browserNotificationPermission={browserNotificationPermission}
+                onRequestBrowserNotificationPermission={
+                  handleRequestBrowserNotificationPermission
+                }
                 onRefresh={loadDueReminders}
                 onMarkAsSeen={handleMarkReminderAsSent}
                 />
