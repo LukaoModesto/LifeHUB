@@ -11,6 +11,7 @@ export type ReminderPresetOption = {
 type CreateReminderModalProps = {
   eventTitle: string;
   selectedReminderValues: number[];
+  disabledReminderValues: number[];
   customMinutesBefore: string;
   errorMessage: string;
   successMessage: string;
@@ -52,6 +53,7 @@ const reminderPresetOptions: ReminderPresetOption[] = [
 function CreateReminderModal({
   eventTitle,
   selectedReminderValues,
+  disabledReminderValues,
   customMinutesBefore,
   errorMessage,
   successMessage,
@@ -108,24 +110,31 @@ function CreateReminderModal({
                 const isSelected = selectedReminderValues.includes(
                   preset.value
                 );
+                const isDisabled = disabledReminderValues.includes(
+                  preset.value
+                );
 
                 return (
                   <button
                     key={preset.value}
                     type="button"
                     onClick={() => onTogglePreset(preset.value)}
-                    disabled={isLoading}
-                    className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-70 ${
-                      isSelected
-                        ? "border-indigo-200 bg-indigo-50"
-                        : "border-slate-200 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50"
+                    disabled={isLoading || isDisabled}
+                    className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed ${
+                      isDisabled
+                        ? "border-slate-200 bg-slate-50 opacity-55"
+                        : isSelected
+                          ? "border-indigo-200 bg-indigo-50"
+                          : "border-slate-200 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50"
                     }`}
                   >
                     <span
                       className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-md border text-xs font-bold ${
                         isSelected
                           ? "border-indigo-600 bg-indigo-600 text-white"
-                          : "border-slate-300 bg-white text-transparent"
+                          : isDisabled
+                            ? "border-slate-300 bg-slate-100 text-transparent"
+                            : "border-slate-300 bg-white text-transparent"
                       }`}
                     >
                       ✓
@@ -134,14 +143,20 @@ function CreateReminderModal({
                     <span>
                       <span
                         className={`block text-sm font-bold ${
-                          isSelected ? "text-indigo-700" : "text-slate-700"
+                          isDisabled
+                            ? "text-slate-400"
+                            : isSelected
+                              ? "text-indigo-700"
+                              : "text-slate-700"
                         }`}
                       >
                         {preset.label}
                       </span>
 
                       <span className="mt-1 block text-xs leading-5 text-slate-500">
-                        {preset.description}
+                        {isDisabled
+                          ? "Esse lembrete já passou para o horário deste evento."
+                          : preset.description}
                       </span>
                     </span>
                   </button>
@@ -176,7 +191,7 @@ function CreateReminderModal({
 
           {!hasSelectedPreset && !customMinutesBefore && (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500">
-              Selecione pelo menos um lembrete ou informe um valor
+              Selecione pelo menos um lembrete disponível ou informe um valor
               personalizado.
             </div>
           )}

@@ -521,6 +521,8 @@ function DashboardPage() {
   }
 
   async function openReminderModal(event: LifeHubEvent) {
+    const disabledReminderValues = getDisabledReminderValuesForEvent(event);
+
     setSelectedEventForReminder(event);
     setSelectedReminderValues([]);
     setCustomReminderMinutesBefore("");
@@ -538,10 +540,13 @@ function DashboardPage() {
         setSelectedReminderValues(
           reminders
             .map((reminder) => reminder.minutes_before)
+            .filter(
+              (minutesBefore) => !disabledReminderValues.includes(minutesBefore)
+            )
             .sort((firstValue, secondValue) => secondValue - firstValue)
         );
       } else {
-        setSelectedReminderValues(defaultReminderValues);
+        setSelectedReminderValues(getValidDefaultReminderValuesForEvent(event));
       }
     } catch {
       setCreateReminderErrorMessage(
@@ -563,6 +568,17 @@ function DashboardPage() {
   }
 
   function handleToggleReminderPreset(value: number) {
+    if (!selectedEventForReminder) {
+      return;
+    }
+
+    const disabledReminderValues =
+      getDisabledReminderValuesForEvent(selectedEventForReminder);
+
+    if (disabledReminderValues.includes(value)) {
+      return;
+    }
+
     setSelectedReminderValues((currentValues) => {
       if (currentValues.includes(value)) {
         return currentValues.filter((currentValue) => currentValue !== value);
@@ -860,6 +876,9 @@ function DashboardPage() {
         <CreateReminderModal
           eventTitle={selectedEventForReminder.title}
           selectedReminderValues={selectedReminderValues}
+          disabledReminderValues={getDisabledReminderValuesForEvent(
+            selectedEventForReminder
+          )}
           customMinutesBefore={customReminderMinutesBefore}
           errorMessage={createReminderErrorMessage}
           successMessage={createReminderSuccessMessage}
@@ -1022,6 +1041,29 @@ function validateReminderTimes(
   }
 
   return "";
+}
+
+function getDisabledReminderValuesForEvent(event: LifeHubEvent) {
+  const eventStartDateTime = buildEventDateTime(
+    event.event_date,
+    formatTime(event.start_time)
+  );
+
+  const minutesUntilEvent = Math.floor(
+    (eventStartDateTime.getTime() - Date.now()) / 60000
+  );
+
+  return defaultReminderValues.filter((reminderValue) => {
+    return reminderValue >= minutesUntilEvent;
+  });
+}
+
+function getValidDefaultReminderValuesForEvent(event: LifeHubEvent) {
+  const disabledReminderValues = getDisabledReminderValuesForEvent(event);
+
+  return defaultReminderValues.filter((reminderValue) => {
+    return !disabledReminderValues.includes(reminderValue);
+  });
 }
 
 function isValidDateInput(date: string) {
