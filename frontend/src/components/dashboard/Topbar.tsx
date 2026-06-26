@@ -11,6 +11,7 @@ type TopbarProps = {
   onOpenSidebar: () => void;
   onCreateEvent: () => void;
   onLogout: () => void;
+  onOpenNotifications: () => void;
 };
 
 function Topbar({
@@ -22,6 +23,7 @@ function Topbar({
   searchQuery,
   onSearchQueryChange,
   onOpenSidebar,
+  onOpenNotifications,
   onCreateEvent,
   onLogout,
 }: TopbarProps) {
@@ -84,8 +86,9 @@ function Topbar({
 
           <button
             type="button"
+            onClick={onOpenNotifications}
             className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
-            aria-label="Notificações"
+            aria-label="Abrir Notificações"
           >
             <Bell size={20} />
 

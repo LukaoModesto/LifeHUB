@@ -748,6 +748,7 @@ async function handleRequestBrowserNotificationPermission() {
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           onOpenSidebar={openSidebar}
+          onOpenNotifications={scrollToReminders}
           onCreateEvent={() => openCreateEventModal()}
           onLogout={handleLogout}
           />
