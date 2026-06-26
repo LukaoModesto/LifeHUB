@@ -35,35 +35,38 @@ function EventCard({
           : "border-slate-200 bg-white"
       }`}
     >
-      <IconBadge color={isPast ? "neutral" : color} />
+      <div className="flex items-start gap-4 sm:flex-1 sm:items-center">
+        <IconBadge color={isPast ? "neutral" : color} />
 
-      <div className="flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h4 className="font-bold text-slate-900">{title}</h4>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="break-words font-bold text-slate-900">{title}</h4>
 
-          {isPast && (
-            <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
-              Finalizado
-            </span>
-          )}
+            {isPast && (
+              <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
+                Finalizado
+              </span>
+            )}
 
-          {!isPast && hasReminders && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
-              <Bell size={13} />
-              {reminderCount} {reminderCount === 1 ? "lembrete" : "lembretes"}
-            </span>
-          )}
+            {!isPast && hasReminders && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
+                <Bell size={13} />
+                {reminderCount}{" "}
+                {reminderCount === 1 ? "lembrete" : "lembretes"}
+              </span>
+            )}
+          </div>
+
+          <p className="mt-1 break-words text-sm text-slate-500">{time}</p>
         </div>
-
-        <p className="mt-1 text-sm text-slate-500">{time}</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
         {!isPast && (
           <button
             type="button"
             onClick={onCreateReminder}
-            className="inline-flex items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-100"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-100"
           >
             <Bell size={15} />
             Lembretes
@@ -73,7 +76,7 @@ function EventCard({
         <button
           type="button"
           onClick={onEdit}
-          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
         >
           <Edit3 size={15} />
           Editar
@@ -82,23 +85,11 @@ function EventCard({
         <button
           type="button"
           onClick={onDelete}
-          className="inline-flex items-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
         >
           <Trash2 size={15} />
           Excluir
         </button>
-
-        {!isPast && (
-          <span
-            className={`h-2.5 w-2.5 rounded-full ${
-              color === "primary"
-                ? "bg-indigo-600"
-                : color === "success"
-                  ? "bg-emerald-500"
-                  : "bg-red-500"
-            }`}
-          />
-        )}
       </div>
     </motion.div>
   );
@@ -121,7 +112,7 @@ function IconBadge({
 
   return (
     <div
-      className={`flex h-12 w-12 items-center justify-center rounded-2xl ${colorClasses[color]}`}
+      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${colorClasses[color]}`}
     >
       <CalendarDays size={22} />
     </div>

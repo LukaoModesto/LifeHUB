@@ -99,10 +99,10 @@ function CalendarSection({
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6"
+        className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[2rem] sm:p-5 lg:p-6"
       >
-        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+        <div className="mb-6 flex flex-col gap-4 xl:mb-7 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-center justify-between gap-3 xl:justify-start">
             <button
               type="button"
               onClick={goToPreviousMonth}
@@ -111,9 +111,12 @@ function CalendarSection({
               <ChevronLeft size={20} />
             </button>
 
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Agenda</h2>
-              <p className="mt-1 text-sm font-medium capitalize text-slate-400">
+            <div className="min-w-0 text-center xl:text-left">
+              <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+                Agenda
+              </h2>
+
+              <p className="mt-1 truncate text-sm font-medium capitalize text-slate-400">
                 {monthLabel}
               </p>
             </div>
@@ -127,7 +130,7 @@ function CalendarSection({
             </button>
           </div>
 
-          <div className="flex w-fit rounded-2xl border border-slate-200 bg-slate-50 p-1">
+          <div className="flex w-full overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50 p-1 sm:w-fit">
             <ViewButton label="Hoje" onClick={goToCurrentMonth} />
             <ViewButton label="Mês" active />
             <ViewButton label="Semana" disabled />
@@ -135,11 +138,11 @@ function CalendarSection({
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-2 text-center">
+        <div className="grid grid-cols-7 gap-1 text-center sm:gap-2">
           {["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"].map((weekDay) => (
             <div
               key={weekDay}
-              className="pb-3 text-xs font-bold tracking-wide text-slate-400"
+              className="pb-2 text-[10px] font-bold tracking-wide text-slate-400 sm:pb-3 sm:text-xs"
             >
               {weekDay}
             </div>
@@ -158,8 +161,8 @@ function CalendarSection({
           ))}
         </div>
 
-        <div className="mt-9">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="mt-8 sm:mt-9">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-bold">Próximos eventos</h3>
               <p className="mt-1 text-sm text-slate-400">
@@ -170,7 +173,7 @@ function CalendarSection({
             <button
               type="button"
               disabled
-              className="cursor-not-allowed text-sm font-semibold text-slate-300"
+              className="w-fit cursor-not-allowed text-sm font-semibold text-slate-300"
               title="Essa função ainda será adicionada."
             >
               Ver todos
@@ -218,7 +221,7 @@ function CalendarSection({
             )}
         </div>
 
-        <div className="mt-10">
+        <div className="mt-9 sm:mt-10">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold">Histórico</h3>
@@ -290,7 +293,7 @@ function ViewButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+      className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition ${
         active
           ? "bg-indigo-600 text-white shadow-sm"
           : disabled
@@ -329,7 +332,7 @@ function CalendarDay({
           ? `${eventCount} ${eventCount === 1 ? "evento" : "eventos"}`
           : "Nenhum evento"
       }
-      className={`relative flex h-14 items-center justify-center rounded-2xl text-sm font-semibold transition ${
+      className={`relative flex h-11 items-center justify-center rounded-xl text-xs font-semibold transition sm:h-14 sm:rounded-2xl sm:text-sm ${
         selected
           ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25"
           : muted
@@ -343,7 +346,7 @@ function CalendarDay({
 
       {hasEvents && (
         <span
-          className={`absolute bottom-1.5 right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+          className={`absolute bottom-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold sm:bottom-1.5 sm:right-1.5 sm:h-5 sm:min-w-5 sm:px-1.5 sm:text-[10px] ${
             selected
               ? "bg-white text-indigo-600"
               : muted
