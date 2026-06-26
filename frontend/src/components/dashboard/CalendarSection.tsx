@@ -22,6 +22,8 @@ type CalendarSectionProps = {
   eventReminderCounts: Record<number, number>;
   isEventsLoading: boolean;
   eventsErrorMessage: string;
+  searchQuery: string;
+  hasActiveSearch: boolean;
   onCreateEventForDate: (eventDate: string) => void;
   onCreateReminder: (event: LifeHubEvent) => void;
   onEditEvent: (event: LifeHubEvent) => void;
@@ -34,6 +36,8 @@ function CalendarSection({
   eventReminderCounts,
   isEventsLoading,
   eventsErrorMessage,
+  searchQuery,
+  hasActiveSearch,
   onCreateEventForDate,
   onCreateReminder,
   onEditEvent,
@@ -164,11 +168,15 @@ function CalendarSection({
         <div className="mt-8 sm:mt-9">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-bold">Próximos eventos</h3>
-              <p className="mt-1 text-sm text-slate-400">
-                Eventos que ainda vão acontecer.
-              </p>
-            </div>
+              <h3 className="text-lg font-bold">
+                {hasActiveSearch ? "Resultados da busca" : "Próximos eventos"}
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  {hasActiveSearch
+                  ? `Eventos encontrados para "${searchQuery}".`
+                  : "Eventos que ainda vão acontecer."}
+                  </p>
+          </div>
 
             <button
               type="button"
@@ -193,12 +201,14 @@ function CalendarSection({
           )}
 
           {!isEventsLoading &&
-            !eventsErrorMessage &&
-            upcomingEvents.length === 0 && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
-                Nenhum próximo evento cadastrado.
-              </div>
-            )}
+          !eventsErrorMessage &&
+          upcomingEvents.length === 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
+            {hasActiveSearch
+            ? `Nenhum evento futuro encontrado para "${searchQuery}".`
+            : "Nenhum próximo evento cadastrado."}
+            </div>
+          )}
 
           {!isEventsLoading &&
             !eventsErrorMessage &&
@@ -224,10 +234,14 @@ function CalendarSection({
         <div className="mt-9 sm:mt-10">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold">Histórico</h3>
-              <p className="mt-1 text-sm text-slate-400">
-                Eventos que já passaram.
-              </p>
+              <h3 className="text-lg font-bold">
+                {hasActiveSearch ? "Histórico encontrado" : "Histórico"}
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  {hasActiveSearch
+                  ? "Eventos antigos que correspondem à sua busca."
+                  : "Eventos que já passaram."}
+                  </p>
             </div>
           </div>
 
@@ -235,7 +249,9 @@ function CalendarSection({
             !eventsErrorMessage &&
             pastEvents.length === 0 && (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
-                Nenhum evento antigo por enquanto.
+                {hasActiveSearch
+                ? `Nenhum evento antigo encontrado para "${searchQuery}".`
+                : "Nenhum evento antigo por enquanto."}
               </div>
             )}
 

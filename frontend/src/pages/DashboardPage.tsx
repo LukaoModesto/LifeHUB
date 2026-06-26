@@ -800,10 +800,13 @@ function DashboardPage() {
                 eventReminderCounts={eventReminderCounts}
                 isEventsLoading={isEventsLoading}
                 eventsErrorMessage={eventsErrorMessage}
+                searchQuery={searchQuery}
+                hasActiveSearch={Boolean(searchQuery.trim())}
                 onCreateEventForDate={openCreateEventModal}
                 onCreateReminder={openReminderModal}
                 onEditEvent={openEditEventModal}
                 onDeleteEvent={openDeleteEventModal}
+                
               />
             </div>
 
