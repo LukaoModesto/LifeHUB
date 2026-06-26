@@ -1,7 +1,13 @@
 import axios from "axios";
 
+const apiBaseUrl = import.meta.env.VITE_API_URL;
+
+if (!apiBaseUrl) {
+  throw new Error("VITE_API_URL não foi configurada.");
+}
+
 export const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: apiBaseUrl,
 });
 
 api.interceptors.request.use((config) => {
