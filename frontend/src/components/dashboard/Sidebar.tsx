@@ -1,68 +1,111 @@
-import type { ReactNode } from "react";
 import {
-  Bell,
+  BarChart3,
   CalendarDays,
-  CheckCircle2,
-  FileText,
-  Grid2X2,
+  CalendarPlus,
+  CheckSquare,
+  Clock3,
   Home,
-  Plus,
   Settings,
+  Target,
+  X,
 } from "lucide-react";
 
 type SidebarProps = {
+  isSidebarOpen: boolean;
+  onCloseSidebar: () => void;
   onCreateEvent: () => void;
 };
 
-function Sidebar({ onCreateEvent }: SidebarProps) {
+function Sidebar({
+  isSidebarOpen,
+  onCloseSidebar,
+  onCreateEvent,
+}: SidebarProps) {
   return (
-    <aside className="hidden w-72 border-r border-slate-200 bg-white px-5 py-6 xl:block">
-      <div className="mb-10 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
-          <CalendarDays size={22} />
-        </div>
-
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">LifeHUB</h1>
-          <p className="text-xs font-medium text-slate-400">
-            Agenda inteligente
-          </p>
-        </div>
-      </div>
-
-      <nav className="space-y-2">
-        <SidebarItem icon={<Home size={18} />} label="Início" />
-        <SidebarItem icon={<Grid2X2 size={18} />} label="Dashboard" />
-        <SidebarItem
-          icon={<CalendarDays size={18} />}
-          label="Calendário"
-          active
+    <>
+      {isSidebarOpen && (
+        <button
+          type="button"
+          onClick={onCloseSidebar}
+          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm xl:hidden"
+          aria-label="Fechar menu"
         />
-        <SidebarItem icon={<CheckCircle2 size={18} />} label="Tarefas" />
-        <SidebarItem icon={<Bell size={18} />} label="Notificações" />
-        <SidebarItem icon={<FileText size={18} />} label="Documentos" />
-        <SidebarItem icon={<Settings size={18} />} label="Configurações" />
-      </nav>
+      )}
 
-      <div className="mt-12 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
-          <CalendarDays size={24} />
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white px-5 py-6 shadow-2xl shadow-slate-900/10 transition-transform duration-300 xl:sticky xl:top-0 xl:z-20 xl:h-screen xl:translate-x-0 xl:shadow-none ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="mb-8 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-lg font-black text-white shadow-lg shadow-indigo-600/25">
+              LH
+            </div>
+
+            <div>
+              <h1 className="text-xl font-black tracking-tight text-slate-900">
+                LifeHUB
+              </h1>
+
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Calendar MVP
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onCloseSidebar}
+            className="rounded-2xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 xl:hidden"
+            aria-label="Fechar menu"
+          >
+            <X size={21} />
+          </button>
         </div>
-
-        <p className="text-center text-sm leading-6 text-slate-500">
-          Organize seu dia e mantenha sua rotina sob controle.
-        </p>
 
         <button
           type="button"
           onClick={onCreateEvent}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
+          className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
         >
-          <Plus size={17} />
+          <CalendarPlus size={18} />
           Novo evento
         </button>
-      </div>
-    </aside>
+
+        <nav className="space-y-2">
+          <SidebarItem icon={<Home size={19} />} label="Dashboard" active />
+          <SidebarItem icon={<CalendarDays size={19} />} label="Calendário" />
+          <SidebarItem icon={<Clock3 size={19} />} label="Lembretes" />
+
+          <SidebarItem
+            icon={<CheckSquare size={19} />}
+            label="Tarefas"
+            disabled
+          />
+
+          <SidebarItem icon={<Target size={19} />} label="Metas" disabled />
+
+          <SidebarItem
+            icon={<BarChart3 size={19} />}
+            label="Progresso"
+            disabled
+          />
+        </nav>
+
+        <div className="mt-auto rounded-3xl border border-slate-200 bg-slate-50 p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-700">
+            <Settings size={17} />
+            Próximas features
+          </div>
+
+          <p className="text-sm leading-6 text-slate-500">
+            Semana, dia, tarefas, metas e progresso serão liberados nas próximas
+            versões do LifeHUB.
+          </p>
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -70,17 +113,23 @@ function SidebarItem({
   icon,
   label,
   active,
+  disabled,
 }: {
-  icon: ReactNode;
+  icon: React.ReactNode;
   label: string;
   active?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
-      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+      type="button"
+      disabled={disabled}
+      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${
         active
           ? "bg-indigo-50 text-indigo-600"
-          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+          : disabled
+            ? "cursor-not-allowed text-slate-300"
+            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
       }`}
     >
       {icon}

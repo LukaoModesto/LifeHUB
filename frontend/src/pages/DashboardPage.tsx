@@ -112,6 +112,8 @@ function DashboardPage() {
 
   const playedReminderIdsRef = useRef<Set<number>>(new Set());
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   useEffect(() => {
     async function loadDashboardData() {
       try {
@@ -631,6 +633,14 @@ function closeCreateEventModal() {
   setCreateEventErrorMessage("");
 }
 
+function openSidebar() {
+  setIsSidebarOpen(true);
+}
+
+function closeSidebar() {
+  setIsSidebarOpen(false);
+}
+
   const userName = user?.name ?? "Usuário";
   const userEmail = user?.email ?? "Conta LifeHUB";
   const userInitials = getUserInitials(userName);
@@ -650,7 +660,14 @@ function closeCreateEventModal() {
   return (
     <main className="min-h-screen bg-[#f8fafc] text-slate-900">
       <div className="flex min-h-screen">
-        <Sidebar onCreateEvent={() => openCreateEventModal()} />
+        <Sidebar
+        isSidebarOpen={isSidebarOpen} 
+        onCloseSidebar={closeSidebar} 
+        onCreateEvent={() => {
+          closeSidebar();
+          openCreateEventModal();
+          }}
+          />
 
         <section className="flex-1">
           <Topbar
@@ -658,6 +675,7 @@ function closeCreateEventModal() {
             userEmail={userEmail}
             userInitials={userInitials}
             isUserLoading={isUserLoading}
+            onOpenSidebar={openSidebar}
             dueRemindersCount={dueReminders.length}
             onCreateEvent={() => openCreateEventModal()}
             onLogout={handleLogout}
