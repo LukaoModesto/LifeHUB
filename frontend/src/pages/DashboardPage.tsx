@@ -56,7 +56,21 @@ type User = {
   email: string;
 };
 
+type ActiveMenuItem = "dashboard" | "calendar" | "reminders";
+
+type EventFormValidationData = {
+  title: string;
+  description: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  preventPastStart: boolean;
+};
+
 const defaultReminderValues = [1440, 720, 360, 60, 15];
+
+const MAX_EVENT_TITLE_LENGTH = 80;
+const MAX_EVENT_DESCRIPTION_LENGTH = 300;
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -86,8 +100,10 @@ function DashboardPage() {
 
   const [selectedEventForReminder, setSelectedEventForReminder] =
     useState<LifeHubEvent | null>(null);
-  const [existingRemindersForSelectedEvent, setExistingRemindersForSelectedEvent] =
-    useState<EventReminder[]>([]);
+  const [
+    existingRemindersForSelectedEvent,
+    setExistingRemindersForSelectedEvent,
+  ] = useState<EventReminder[]>([]);
   const [selectedReminderValues, setSelectedReminderValues] = useState<
     number[]
   >([]);
@@ -116,25 +132,22 @@ function DashboardPage() {
   const [deleteEventErrorMessage, setDeleteEventErrorMessage] = useState("");
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
 
-  const playedReminderIdsRef = useRef<Set<number>>(new Set());
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeMenuItem, setActiveMenuItem] =
+    useState<ActiveMenuItem>("dashboard");
+
+  const [browserNotificationPermission, setBrowserNotificationPermission] =
+    useState<BrowserNotificationPermission>(() =>
+      getBrowserNotificationPermission()
+    );
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const playedReminderIdsRef = useRef<Set<number>>(new Set());
 
   const dashboardRef = useRef<HTMLDivElement | null>(null);
   const calendarRef = useRef<HTMLDivElement | null>(null);
   const remindersRef = useRef<HTMLDivElement | null>(null);
-  const [activeMenuItem, setActiveMenuItem] = useState<
-  "dashboard" | "calendar" | "reminders"
-  >("dashboard");
-
-  const [
-    browserNotificationPermission,
-    setBrowserNotificationPermission,
-  ] = useState<BrowserNotificationPermission>(() =>
-    getBrowserNotificationPermission()
-  );
-
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -190,6 +203,7 @@ function DashboardPage() {
 
     try {
       const eventsData = await getEvents();
+
       setEvents(eventsData);
       await loadEventReminderCounts(eventsData);
     } catch {
@@ -248,11 +262,13 @@ function DashboardPage() {
         } catch {
           console.warn("O navegador bloqueou o som da notificação.");
         }
+
         showBrowserNotification({
           title: "Lembrete do LifeHUB",
           body: `${reminder.event_title} está chegando.`,
-          tag: `lifehub-reminder-${reminder.reminder_id}`
+          tag: `lifehub-reminder-${reminder.reminder_id}`,
         });
+
         playedReminderIdsRef.current.add(reminder.reminder_id);
       });
     } catch {
@@ -267,25 +283,17 @@ function DashboardPage() {
 
     setCreateEventErrorMessage("");
 
-    if (!newEventTitle.trim()) {
-      setCreateEventErrorMessage("O título do evento é obrigatório.");
-      return;
-    }
+    const validationError = validateEventForm({
+      title: newEventTitle,
+      description: newEventDescription,
+      eventDate: newEventDate,
+      startTime: newEventStartTime,
+      endTime: newEventEndTime,
+      preventPastStart: true,
+    });
 
-    if (!newEventDate) {
-      setCreateEventErrorMessage("A data do evento é obrigatória.");
-      return;
-    }
-
-    if (!newEventStartTime) {
-      setCreateEventErrorMessage("O horário de início é obrigatório.");
-      return;
-    }
-
-    if (newEventEndTime && newEventEndTime <= newEventStartTime) {
-      setCreateEventErrorMessage(
-        "O horário de término deve ser maior que o horário de início."
-      );
+    if (validationError) {
+      setCreateEventErrorMessage(validationError);
       return;
     }
 
@@ -333,10 +341,7 @@ function DashboardPage() {
 
     const reminderValues = buildReminderValues();
 
-    if (reminderValues.length === 0) {
-      setCreateReminderErrorMessage(
-        "Selecione pelo menos um lembrete ou informe um valor personalizado."
-      );
+    if (!reminderValues) {
       return;
     }
 
@@ -424,25 +429,17 @@ function DashboardPage() {
       return;
     }
 
-    if (!editEventTitle.trim()) {
-      setEditEventErrorMessage("O título do evento é obrigatório.");
-      return;
-    }
+    const validationError = validateEventForm({
+      title: editEventTitle,
+      description: editEventDescription,
+      eventDate: editEventDate,
+      startTime: editEventStartTime,
+      endTime: editEventEndTime,
+      preventPastStart: !isPastEvent(selectedEventForEdit),
+    });
 
-    if (!editEventDate) {
-      setEditEventErrorMessage("A data do evento é obrigatória.");
-      return;
-    }
-
-    if (!editEventStartTime) {
-      setEditEventErrorMessage("O horário de início é obrigatório.");
-      return;
-    }
-
-    if (editEventEndTime && editEventEndTime <= editEventStartTime) {
-      setEditEventErrorMessage(
-        "O horário de término deve ser maior que o horário de início."
-      );
+    if (validationError) {
+      setEditEventErrorMessage(validationError);
       return;
     }
 
@@ -587,22 +584,45 @@ function DashboardPage() {
         setCreateReminderErrorMessage(
           "Informe uma quantidade personalizada válida de minutos."
         );
-        return [];
+        return null;
       }
 
       if (customValue > 43200) {
         setCreateReminderErrorMessage(
           "O lembrete personalizado não pode ultrapassar 30 dias antes do evento."
         );
-        return [];
+        return null;
       }
 
       reminderValues.push(customValue);
     }
 
-    return Array.from(new Set(reminderValues)).sort(
+    const uniqueReminderValues = Array.from(new Set(reminderValues)).sort(
       (firstValue, secondValue) => secondValue - firstValue
     );
+
+    if (uniqueReminderValues.length === 0) {
+      setCreateReminderErrorMessage(
+        "Selecione pelo menos um lembrete ou informe um valor personalizado."
+      );
+      return null;
+    }
+
+    if (!selectedEventForReminder) {
+      return uniqueReminderValues;
+    }
+
+    const reminderValidationError = validateReminderTimes(
+      selectedEventForReminder,
+      uniqueReminderValues
+    );
+
+    if (reminderValidationError) {
+      setCreateReminderErrorMessage(reminderValidationError);
+      return null;
+    }
+
+    return uniqueReminderValues;
   }
 
   function openEditEventModal(event: LifeHubEvent) {
@@ -641,68 +661,68 @@ function DashboardPage() {
   }
 
   function openCreateEventModal(eventDate = "") {
-  setNewEventTitle("");
-  setNewEventDescription("");
-  setNewEventDate(eventDate);
-  setNewEventStartTime("");
-  setNewEventEndTime("");
-  setCreateEventErrorMessage("");
-  setIsCreateEventModalOpen(true);
-}
+    setNewEventTitle("");
+    setNewEventDescription("");
+    setNewEventDate(eventDate);
+    setNewEventStartTime("");
+    setNewEventEndTime("");
+    setCreateEventErrorMessage("");
+    setIsCreateEventModalOpen(true);
+  }
 
-function closeCreateEventModal() {
-  setIsCreateEventModalOpen(false);
-  setNewEventTitle("");
-  setNewEventDescription("");
-  setNewEventDate("");
-  setNewEventStartTime("");
-  setNewEventEndTime("");
-  setCreateEventErrorMessage("");
-}
+  function closeCreateEventModal() {
+    setIsCreateEventModalOpen(false);
+    setNewEventTitle("");
+    setNewEventDescription("");
+    setNewEventDate("");
+    setNewEventStartTime("");
+    setNewEventEndTime("");
+    setCreateEventErrorMessage("");
+  }
 
-function openSidebar() {
-  setIsSidebarOpen(true);
-}
+  function openSidebar() {
+    setIsSidebarOpen(true);
+  }
 
-function closeSidebar() {
-  setIsSidebarOpen(false);
-}
+  function closeSidebar() {
+    setIsSidebarOpen(false);
+  }
 
-function scrollToDashboard() {
-  setActiveMenuItem("dashboard");
-  closeSidebar();
+  function scrollToDashboard() {
+    setActiveMenuItem("dashboard");
+    closeSidebar();
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  });
-}
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
 
-function scrollToCalendar() {
-  setActiveMenuItem("calendar");
-  closeSidebar();
+  function scrollToCalendar() {
+    setActiveMenuItem("calendar");
+    closeSidebar();
 
-  calendarRef.current?.scrollIntoView({
-    behavior: "smooth",
-    block: "start",
-  });
-}
+    calendarRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
 
-function scrollToReminders() {
-  setActiveMenuItem("reminders");
-  closeSidebar();
+  function scrollToReminders() {
+    setActiveMenuItem("reminders");
+    closeSidebar();
 
-  remindersRef.current?.scrollIntoView({
-    behavior: "smooth",
-    block: "start",
-  });
-}
+    remindersRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
 
-async function handleRequestBrowserNotificationPermission() {
-  const permission = await requestBrowserNotificationPermission();
+  async function handleRequestBrowserNotificationPermission() {
+    const permission = await requestBrowserNotificationPermission();
 
-  setBrowserNotificationPermission(permission);
-}
+    setBrowserNotificationPermission(permission);
+  }
 
   const userName = user?.name ?? "Usuário";
   const userEmail = user?.email ?? "Conta LifeHUB";
@@ -711,77 +731,80 @@ async function handleRequestBrowserNotificationPermission() {
   const searchedEvents = filterEventsBySearch(events, searchQuery);
 
   const upcomingEvents = searchedEvents
-  .filter((event) => !isPastEvent(event))
-  .sort(sortEventsAscending);
+    .filter((event) => !isPastEvent(event))
+    .sort(sortEventsAscending);
 
   const pastEvents = searchedEvents
-  .filter((event) => isPastEvent(event))
-  .sort(sortEventsDescending);
+    .filter((event) => isPastEvent(event))
+    .sort(sortEventsDescending);
 
   const alertRemindersCount = dueReminders.filter(
     (reminder) => reminder.notification_level === "alert"
   ).length;
 
   return (
-    <main ref={dashboardRef} className="min-h-screen bg-[#f8fafc] text-slate-900">
+    <main
+      ref={dashboardRef}
+      className="min-h-screen bg-[#f8fafc] text-slate-900"
+    >
       <div className="flex min-h-screen">
         <Sidebar
-        isSidebarOpen={isSidebarOpen}
-        activeMenuItem={activeMenuItem}
-        onCloseSidebar={closeSidebar}
-        onGoToDashboard={scrollToDashboard}
-        onGoToCalendar={scrollToCalendar}
-        onGoToReminders={scrollToReminders}
-        onCreateEvent={() => {
-          closeSidebar();
-          openCreateEventModal();
+          isSidebarOpen={isSidebarOpen}
+          activeMenuItem={activeMenuItem}
+          onCloseSidebar={closeSidebar}
+          onGoToDashboard={scrollToDashboard}
+          onGoToCalendar={scrollToCalendar}
+          onGoToReminders={scrollToReminders}
+          onCreateEvent={() => {
+            closeSidebar();
+            openCreateEventModal();
           }}
-          />
+        />
 
         <section className="flex-1">
           <Topbar
-          userName={userName}
-          userEmail={userEmail}
-          userInitials={userInitials}
-          isUserLoading={isUserLoading}
-          dueRemindersCount={dueReminders.length}
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-          onOpenSidebar={openSidebar}
-          onOpenNotifications={scrollToReminders}
-          onCreateEvent={() => openCreateEventModal()}
-          onLogout={handleLogout}
+            userName={userName}
+            userEmail={userEmail}
+            userInitials={userInitials}
+            isUserLoading={isUserLoading}
+            dueRemindersCount={dueReminders.length}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            onOpenSidebar={openSidebar}
+            onOpenNotifications={scrollToReminders}
+            onCreateEvent={() => openCreateEventModal()}
+            onLogout={handleLogout}
           />
 
           <div className="grid gap-6 p-5 lg:p-8 2xl:grid-cols-[1fr_420px]">
             <div ref={calendarRef} className="scroll-mt-24">
               <CalendarSection
-              upcomingEvents={upcomingEvents}
-              pastEvents={pastEvents}
-              eventReminderCounts={eventReminderCounts}
-              isEventsLoading={isEventsLoading}
-              eventsErrorMessage={eventsErrorMessage}
-              onCreateEventForDate={openCreateEventModal}
-              onCreateReminder={openReminderModal}
-              onEditEvent={openEditEventModal}
-              onDeleteEvent={openDeleteEventModal}
+                upcomingEvents={upcomingEvents}
+                pastEvents={pastEvents}
+                eventReminderCounts={eventReminderCounts}
+                isEventsLoading={isEventsLoading}
+                eventsErrorMessage={eventsErrorMessage}
+                onCreateEventForDate={openCreateEventModal}
+                onCreateReminder={openReminderModal}
+                onEditEvent={openEditEventModal}
+                onDeleteEvent={openDeleteEventModal}
               />
-              </div>
+            </div>
 
             <aside className="space-y-6">
               <div ref={remindersRef} className="scroll-mt-24">
                 <NotificationPanel
-                reminders={dueReminders}
-                isLoading={isDueRemindersLoading}
-                errorMessage={dueRemindersErrorMessage}
-                browserNotificationPermission={browserNotificationPermission}
-                onRequestBrowserNotificationPermission={
-                  handleRequestBrowserNotificationPermission
-                }
-                onRefresh={loadDueReminders}
-                onMarkAsSeen={handleMarkReminderAsSent}
+                  reminders={dueReminders}
+                  isLoading={isDueRemindersLoading}
+                  errorMessage={dueRemindersErrorMessage}
+                  browserNotificationPermission={browserNotificationPermission}
+                  onRequestBrowserNotificationPermission={
+                    handleRequestBrowserNotificationPermission
+                  }
+                  onRefresh={loadDueReminders}
+                  onMarkAsSeen={handleMarkReminderAsSent}
                 />
-                </div>
+              </div>
 
               <SummaryPanel
                 upcomingEventsCount={upcomingEvents.length}
@@ -868,7 +891,9 @@ function getUserInitials(name: string) {
     return nameParts[0].slice(0, 2).toUpperCase();
   }
 
-  return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+  return `${nameParts[0][0]}${nameParts[
+    nameParts.length - 1
+  ][0]}`.toUpperCase();
 }
 
 function filterEventsBySearch(events: LifeHubEvent[], searchQuery: string) {
@@ -909,4 +934,126 @@ function formatDateForSearch(date: string) {
 
   return `${day}/${month}/${year}`;
 }
+
+function validateEventForm({
+  title,
+  description,
+  eventDate,
+  startTime,
+  endTime,
+  preventPastStart,
+}: EventFormValidationData) {
+  const trimmedTitle = title.trim();
+  const trimmedDescription = description.trim();
+
+  if (!trimmedTitle) {
+    return "O título do evento é obrigatório.";
+  }
+
+  if (trimmedTitle.length > MAX_EVENT_TITLE_LENGTH) {
+    return `O título não pode passar de ${MAX_EVENT_TITLE_LENGTH} caracteres.`;
+  }
+
+  if (trimmedDescription.length > MAX_EVENT_DESCRIPTION_LENGTH) {
+    return `A descrição não pode passar de ${MAX_EVENT_DESCRIPTION_LENGTH} caracteres.`;
+  }
+
+  if (!eventDate) {
+    return "A data do evento é obrigatória.";
+  }
+
+  if (!isValidDateInput(eventDate)) {
+    return "Informe uma data válida para o evento.";
+  }
+
+  if (!startTime) {
+    return "O horário de início é obrigatório.";
+  }
+
+  if (!isValidTimeInput(startTime)) {
+    return "Informe um horário de início válido.";
+  }
+
+  if (endTime && !isValidTimeInput(endTime)) {
+    return "Informe um horário de término válido.";
+  }
+
+  if (endTime && endTime <= startTime) {
+    return "O horário de término deve ser maior que o horário de início.";
+  }
+
+  if (preventPastStart) {
+    const eventStartDateTime = buildEventDateTime(eventDate, startTime);
+    const oneMinuteAgo = Date.now() - 60000;
+
+    if (eventStartDateTime.getTime() < oneMinuteAgo) {
+      return "Não é possível criar ou mover um evento para um horário que já passou.";
+    }
+  }
+
+  return "";
+}
+
+function validateReminderTimes(
+  event: LifeHubEvent,
+  reminderValues: number[]
+) {
+  const eventStartDateTime = buildEventDateTime(
+    event.event_date,
+    formatTime(event.start_time)
+  );
+
+  if (eventStartDateTime.getTime() <= Date.now()) {
+    return "Não é possível criar lembretes para um evento que já começou.";
+  }
+
+  const minutesUntilEvent = Math.floor(
+    (eventStartDateTime.getTime() - Date.now()) / 60000
+  );
+
+  const invalidReminderValue = reminderValues.find((reminderValue) => {
+    return reminderValue >= minutesUntilEvent;
+  });
+
+  if (invalidReminderValue) {
+    return `O lembrete de ${formatReminderValue(
+      invalidReminderValue
+    )} já passou para este evento. Escolha um intervalo menor.`;
+  }
+
+  return "";
+}
+
+function isValidDateInput(date: string) {
+  const parsedDate = new Date(`${date}T00:00`);
+
+  return !Number.isNaN(parsedDate.getTime());
+}
+
+function isValidTimeInput(time: string) {
+  const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+  return timeRegex.test(time);
+}
+
+function buildEventDateTime(date: string, time: string) {
+  return new Date(`${date}T${formatTime(time)}`);
+}
+
+function formatReminderValue(minutesBefore: number) {
+  if (minutesBefore % 1440 === 0) {
+    const days = minutesBefore / 1440;
+
+    return `${days} ${days === 1 ? "dia" : "dias"} antes`;
+  }
+
+  if (minutesBefore % 60 === 0) {
+    const hours = minutesBefore / 60;
+
+    return `${hours} ${hours === 1 ? "hora" : "horas"} antes`;
+  }
+
+  return `${minutesBefore} minutos antes`;
+}
+
 export default DashboardPage;
