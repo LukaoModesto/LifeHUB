@@ -1,142 +1,253 @@
 # LifeHUB
 
-LifeHUB is a productivity and organization application focused on events, reminders, goals and time tracking.
+LifeHUB é uma aplicação de produtividade pessoal desenvolvida com foco em agenda, eventos, lembretes e notificações. O projeto possui backend em FastAPI e frontend em React, com autenticação tradicional por e-mail/senha e login com Google.
 
-The main goal of the project is to help users organize important events with dates, times and customizable reminders. The application is being developed incrementally, with new features being added through versioned releases.
+O objetivo do LifeHUB é centralizar compromissos, lembretes e futuramente metas, sessões de atividade e acompanhamento de progresso em uma interface moderna, responsiva e preparada para evoluir como PWA.
 
-## Current Status
+---
 
-The backend is currently under development and already includes:
+## Status do projeto
 
-* User registration
-* User login with JWT authentication
-* Protected user route
-* Event management
-* Event reminders
-* Reminder engine
-* Goals management
-* Activity sessions
+Em desenvolvimento ativo.
 
-The project is being built as a real-world full stack application, with a focus on clean architecture, security, version control and future frontend/PWA integration.
+### Funcionalidades já implementadas
 
-## Tech Stack
+* Cadastro de usuário
+* Login com e-mail e senha
+* Login com Google
+* Autenticação com JWT
+* Rotas protegidas
+* Dashboard autenticado
+* Criação de eventos
+* Listagem de eventos
+* Edição de eventos
+* Exclusão de eventos
+* Validação de eventos no frontend e backend
+* Criação de lembretes por evento
+* Listagem de lembretes por evento
+* Exclusão de lembretes
+* Validação de lembretes no frontend e backend
+* Busca de eventos no dashboard
+* Calendário mensal funcional
+* Modal de eventos por dia
+* Painel de notificações
+* Notificações do navegador
+* Som de notificação
+* Sidebar responsiva
+* Configuração por variáveis de ambiente
+* Estrutura preparada para deploy
+
+---
+
+## Tecnologias utilizadas
 
 ### Backend
 
 * Python
 * FastAPI
+* Uvicorn
 * SQLAlchemy
 * SQLite
-* JWT Authentication
 * Pydantic
-* Uvicorn
+* Pydantic Settings
+* Passlib
+* Bcrypt
+* Python-JOSE
+* Google Auth
 
-### Future Frontend
+### Frontend
 
-* PWA
-* Responsive web interface
-* Event and reminder management screens
-* Browser notifications
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* React Router DOM
+* Axios
+* Framer Motion
+* Lucide React
+* React OAuth Google
 
-## Project Structure
+---
+
+## Estrutura do projeto
 
 ```text
 LifeHUB/
 ├── backend/
+│   ├── app/
+│   │   ├── core/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   └── database.py
 │   ├── main.py
-│   └── app/
-│       ├── core/
-│       ├── models/
-│       ├── routes/
-│       ├── schemas/
-│       ├── services/
-│       ├── database.py
-│       └── main.py
-├── README.md
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── lifehub.db
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── types/
+│   │   └── utils/
+│   ├── .env.example
+│   ├── package.json
+│   └── vite.config.ts
+│
 ├── CHANGELOG.md
+├── README.md
 └── .gitignore
 ```
 
-## Main Features
+---
 
-### Authentication
+## Configuração do backend
 
-* User registration
-* User login
-* JWT access token
-* Protected routes
+Entre na pasta do backend:
 
-### Events
-
-* Create events
-* List events
-* Search event by ID
-* Update events
-* Delete events
-* Filter events by date
-* Validate event start and end time
-
-### Event Reminders
-
-* Create reminders for events
-* List event reminders
-* Delete reminders
-* Prevent duplicate reminders
-* Validate reminder time
-
-### Reminder Engine
-
-The reminder engine checks which reminders are currently due.
-
-It returns reminder information such as:
-
-* Event title
-* Event date and time
-* Reminder time
-* Minutes before event
-* Notification level
-* Sound type
-
-Current notification behavior:
-
-```text
-24 hours before → normal notification
-12 hours before → normal notification
-6 hours before  → normal notification
-2 hours before  → alert notification
-Less than 2h    → alert notification
+```bash
+cd backend
 ```
 
-### Goals
+Crie e ative o ambiente virtual:
 
-* Create goals
-* List goals
-* Update goals
-* Delete goals
-* Define target hours
-* Define goal period: daily, weekly or monthly
+```bash
+python -m venv .venv
+```
 
-### Activity Sessions
+No Windows PowerShell:
 
-* Create activity sessions
-* Link sessions to goals
-* List sessions
-* Update sessions
-* Delete sessions
-* Validate session start and end time
+```bash
+.\.venv\Scripts\Activate.ps1
+```
 
-## API Routes
+Instale as dependências:
 
-### Users
+```bash
+pip install -r requirements.txt
+```
+
+Crie um arquivo `.env` dentro da pasta `backend` com base no `.env.example`:
+
+```env
+SECRET_KEY=change-this-secret-key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+DATABASE_URL=sqlite:///./lifehub.db
+FRONTEND_URL=http://localhost:5173
+GOOGLE_CLIENT_ID=your-google-client-id
+```
+
+Execute o servidor:
+
+```bash
+python -m uvicorn main:app --reload
+```
+
+A API estará disponível em:
+
+```text
+http://localhost:8000
+```
+
+A documentação Swagger estará disponível em:
+
+```text
+http://localhost:8000/docs
+```
+
+---
+
+## Configuração do frontend
+
+Entre na pasta do frontend:
+
+```bash
+cd frontend
+```
+
+Instale as dependências:
+
+```bash
+npm install
+```
+
+Crie um arquivo `.env` dentro da pasta `frontend` com base no `.env.example`:
+
+```env
+VITE_API_URL=http://localhost:8000
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
+```
+
+Execute o frontend:
+
+```bash
+npm run dev
+```
+
+O frontend estará disponível em:
+
+```text
+http://localhost:5173
+```
+
+---
+
+## Variáveis de ambiente
+
+### Backend
+
+| Variável                      | Descrição                              |
+| ----------------------------- | -------------------------------------- |
+| `SECRET_KEY`                  | Chave usada para assinar os tokens JWT |
+| `ALGORITHM`                   | Algoritmo usado no JWT                 |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Tempo de expiração do token            |
+| `DATABASE_URL`                | URL de conexão com o banco de dados    |
+| `FRONTEND_URL`                | URL permitida no CORS                  |
+| `GOOGLE_CLIENT_ID`            | Client ID do Google OAuth              |
+
+### Frontend
+
+| Variável                | Descrição                                   |
+| ----------------------- | ------------------------------------------- |
+| `VITE_API_URL`          | URL base da API backend                     |
+| `VITE_GOOGLE_CLIENT_ID` | Client ID do Google OAuth usado no frontend |
+
+---
+
+## Autenticação
+
+O LifeHUB possui dois fluxos de autenticação:
+
+### Login tradicional
+
+O usuário informa e-mail e senha. O backend valida as credenciais e retorna um token JWT.
+
+### Login com Google
+
+O frontend recebe o `id_token` do Google e envia para o backend. O backend valida o token usando o Google Client ID, cria o usuário automaticamente caso ele ainda não exista e retorna o JWT padrão do LifeHUB.
+
+Dessa forma, o restante da aplicação continua usando a autenticação própria do projeto.
+
+---
+
+## Rotas principais da API
+
+### Usuários
 
 ```text
 POST /users/register
 POST /users/login
+POST /users/google-login
 GET  /users/me
 GET  /users/
 ```
 
-### Events
+### Eventos
 
 ```text
 POST   /events/
@@ -146,7 +257,7 @@ PUT    /events/{event_id}
 DELETE /events/{event_id}
 ```
 
-### Event Reminders
+### Lembretes de eventos
 
 ```text
 POST   /events/{event_id}/reminders/
@@ -154,125 +265,124 @@ GET    /events/{event_id}/reminders/
 DELETE /events/{event_id}/reminders/{reminder_id}
 ```
 
-### Reminder Engine
+### Motor de lembretes
 
 ```text
 GET   /reminders/due
 PATCH /reminders/{reminder_id}/sent
 ```
 
-### Goals
+---
 
-```text
-POST   /goals/
-GET    /goals/
-GET    /goals/{goal_id}
-PUT    /goals/{goal_id}
-DELETE /goals/{goal_id}
-```
+## Validações implementadas
 
-### Activity Sessions
+### Eventos
 
-```text
-POST   /activity-sessions/
-GET    /activity-sessions/
-GET    /activity-sessions/{session_id}
-PUT    /activity-sessions/{session_id}
-DELETE /activity-sessions/{session_id}
-```
+* Título obrigatório
+* Título com limite de caracteres
+* Descrição com limite de caracteres
+* Data obrigatória
+* Horário de início obrigatório
+* Horário final maior que o horário inicial
+* Bloqueio de criação de evento no passado
+* Bloqueio de movimentação de evento futuro para o passado
 
-## How to Run the Project
+### Lembretes
 
-Clone the repository:
+* O lembrete precisa ter valor maior que zero
+* O lembrete não pode passar de 30 dias antes do evento
+* Não é possível criar lembrete para evento que já começou
+* Não é possível criar lembrete cujo horário de disparo já passou
+* Não é possível duplicar o mesmo lembrete no mesmo evento
 
-```bash
-git clone https://github.com/LukaoModesto/LifeHUB.git
-```
+---
 
-Enter the project folder:
+## Segurança
 
-```bash
-cd LifeHUB
-```
+O projeto já conta com algumas práticas importantes de segurança:
 
-Enter the backend folder:
+* Senhas armazenadas com hash
+* Autenticação com JWT
+* Rotas protegidas por Bearer Token
+* Variáveis sensíveis fora do código
+* `.env` ignorado pelo Git
+* Validação de dados no frontend e no backend
+* CORS configurado por variável de ambiente
+* Validação do token do Google no backend
+* Separação entre token do Google e token interno da aplicação
+
+---
+
+## Comandos úteis
+
+### Rodar backend
 
 ```bash
 cd backend
-```
-
-Create and activate a virtual environment:
-
-```bash
-python -m venv .venv
-```
-
-On Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run the backend:
-
-```bash
 python -m uvicorn main:app --reload
 ```
 
-Open the API documentation:
+### Rodar frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+### Atualizar dependências Python
+
+```bash
+cd backend
+pip freeze > requirements.txt
+```
+
+### Verificar status do Git
+
+```bash
+git status
+```
+
+---
+
+## Roadmap
+
+### Próximas melhorias
+
+* Melhorar tratamento visual de erros
+* Melhorar documentação da API
+* Criar testes automatizados
+* Preparar deploy do backend
+* Preparar deploy do frontend
+* Configurar banco PostgreSQL para produção
+* Melhorar fluxo de notificações como PWA
+* Adicionar Service Worker
+* Implementar metas
+* Implementar sessões de atividade
+* Implementar painel de progresso
+* Implementar eventos compartilhados
+* Implementar grupos de notificação
+
+---
+
+## Padrão de commits
+
+O projeto utiliza commits semânticos no estilo Conventional Commits.
+
+Exemplos:
 
 ```text
-http://127.0.0.1:8000/docs
+feat: add google login
+fix: correct reminder validation
+docs: update project readme
+chore: configure backend environment settings
+refactor: improve event validation
 ```
 
-## Environment Variables
+---
 
-Create a `.env` file in the project root based on `.env.example`.
+## Autor
 
-Example:
+Desenvolvido por Lucas Andrade. =D
 
-```env
-SECRET_KEY=change_this_secret_key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-```
-
-Sensitive files such as `.env`, local databases and virtual environments must not be committed.
-
-## Development Roadmap
-
-### MVP
-
-* Authentication
-* Event management
-* Event reminders
-* Reminder engine
-* Basic frontend/PWA
-* Browser notifications
-
-### Future Releases
-
-* Custom notification priority
-* Custom notification sounds
-* Shared events
-* Group notifications
-* Team and company events
-* User feedback/report system
-* Goal progress dashboard
-* Mobile app version
-
-## Product Vision
-
-LifeHUB started as a personal agenda and reminder application, but the long-term vision is to evolve it into a productivity platform for individuals, groups and teams.
-
-Future versions may support shared events, group reminders, team notifications and company-level organization features.
-
-## Author
-
-Developed by Lucas Andrade.
+GitHub: [LukaoModesto](https://github.com/LukaoModesto)
+Linkedin: https://www.linkedin.com/in/lucasoliveira-o-dev/

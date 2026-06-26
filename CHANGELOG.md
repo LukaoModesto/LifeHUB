@@ -120,3 +120,20 @@ The project follows an incremental development approach, where features are deve
 * The first public version should focus on the core agenda, events and reminders experience.
 * Secondary features such as goals, activity sessions and dashboards should be released incrementally.
 * Future versions may support shared events, group notifications, teams, companies and custom notification behavior.
+
+## [0.4.0] - 2026-06-26
+
+### Added
+- Added Google Login authentication.
+- Added backend validation for events and reminders.
+- Added environment-based configuration for frontend and backend.
+
+### Changed
+- Improved README documentation.
+- Improved backend security configuration.
+- Improved frontend API configuration using environment variables.
+
+### Security
+- Moved sensitive backend settings to environment variables.
+- Added Google ID token validation on the backend.
+- Added backend-side validation for event and reminder rules.
