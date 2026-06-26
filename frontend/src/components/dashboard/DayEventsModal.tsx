@@ -1,5 +1,12 @@
 import { motion } from "framer-motion";
-import { CalendarPlus, Clock, Edit3, Trash2, X } from "lucide-react";
+import {
+  CalendarPlus,
+  CheckCircle2,
+  Clock,
+  Edit3,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import type { LifeHubEvent } from "../../services/eventService";
 
@@ -36,6 +43,21 @@ function DayEventsModal({
   function handleCreateEventForDate() {
     onClose();
     onCreateEventForDate(selectedDateInputValue);
+  }
+
+  function handleCreateReminder(event: LifeHubEvent) {
+    onClose();
+    onCreateReminder(event);
+  }
+
+  function handleEditEvent(event: LifeHubEvent) {
+    onClose();
+    onEditEvent(event);
+  }
+
+  function handleDeleteEvent(event: LifeHubEvent) {
+    onClose();
+    onDeleteEvent(event);
   }
 
   return (
@@ -78,17 +100,31 @@ function DayEventsModal({
           <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
             {events.map((event) => {
               const reminderCount = eventReminderCounts[event.id] ?? 0;
+              const isPast = isPastEvent(event);
 
               return (
                 <div
                   key={event.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  className={`rounded-2xl border p-4 ${
+                    isPast
+                      ? "border-slate-200 bg-slate-50 opacity-80"
+                      : "border-slate-200 bg-white"
+                  }`}
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h3 className="font-bold text-slate-900">
-                        {event.title}
-                      </h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-bold text-slate-900">
+                          {event.title}
+                        </h3>
+
+                        {isPast && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
+                            <CheckCircle2 size={13} />
+                            Finalizado
+                          </span>
+                        )}
+                      </div>
 
                       <p className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-500">
                         <Clock size={15} />
@@ -101,7 +137,7 @@ function DayEventsModal({
                         </p>
                       )}
 
-                      {reminderCount > 0 && (
+                      {!isPast && reminderCount > 0 && (
                         <span className="mt-3 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
                           {reminderCount}{" "}
                           {reminderCount === 1 ? "lembrete" : "lembretes"}
@@ -110,17 +146,19 @@ function DayEventsModal({
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onCreateReminder(event)}
-                        className="rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100"
-                      >
-                        Lembretes
-                      </button>
+                      {!isPast && (
+                        <button
+                          type="button"
+                          onClick={() => handleCreateReminder(event)}
+                          className="rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100"
+                        >
+                          Lembretes
+                        </button>
+                      )}
 
                       <button
                         type="button"
-                        onClick={() => onEditEvent(event)}
+                        onClick={() => handleEditEvent(event)}
                         className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"
                       >
                         <Edit3 size={13} />
@@ -129,7 +167,7 @@ function DayEventsModal({
 
                       <button
                         type="button"
-                        onClick={() => onDeleteEvent(event)}
+                        onClick={() => handleDeleteEvent(event)}
                         className="inline-flex items-center gap-1.5 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-100"
                       >
                         <Trash2 size={13} />
@@ -186,6 +224,14 @@ function formatEventTime(event: LifeHubEvent) {
 
 function formatTime(time: string) {
   return time.slice(0, 5);
+}
+
+function isPastEvent(event: LifeHubEvent) {
+  const eventEndDateTime = new Date(
+    `${event.event_date}T${formatTime(event.end_time ?? event.start_time)}`
+  );
+
+  return eventEndDateTime.getTime() < new Date().getTime();
 }
 
 export default DayEventsModal;
