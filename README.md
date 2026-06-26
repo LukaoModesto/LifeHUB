@@ -343,6 +343,15 @@ git status
 ```
 
 ---
+## Deploy
+
+O plano inicial de deploy do LifeHUB é:
+
+- Frontend na Vercel
+- Backend no Render
+- Banco PostgreSQL em produção futuramente
+
+As instruções detalhadas estão no arquivo [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
 ## Roadmap
 
