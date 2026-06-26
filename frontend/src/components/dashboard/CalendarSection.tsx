@@ -40,6 +40,7 @@ function CalendarSection({
   onDeleteEvent,
 }: CalendarSectionProps) {
   const [visibleMonthDate, setVisibleMonthDate] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const allEvents = [...upcomingEvents, ...pastEvents];
 
@@ -47,10 +48,32 @@ function CalendarSection({
     return buildCalendarDays(visibleMonthDate, allEvents);
   }, [visibleMonthDate, allEvents]);
 
+  const selectedDateEvents = selectedDate
+    ? allEvents
+        .filter((event) => isSameDate(parseEventDate(event.event_date), selectedDate))
+        .sort(sortEventsByDateAscending)
+    : [];
+
+  const displayedUpcomingEvents = selectedDate
+    ? selectedDateEvents.filter((event) => !isPastEventByDate(event))
+    : upcomingEvents;
+
+  const displayedPastEvents = selectedDate
+    ? selectedDateEvents.filter((event) => isPastEventByDate(event))
+    : pastEvents;
+
   const monthLabel = new Intl.DateTimeFormat("pt-BR", {
     month: "long",
     year: "numeric",
   }).format(visibleMonthDate);
+
+  const selectedDateLabel = selectedDate
+    ? new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }).format(selectedDate)
+    : null;
 
   function goToPreviousMonth() {
     setVisibleMonthDate((currentDate) => {
@@ -60,6 +83,8 @@ function CalendarSection({
         1
       );
     });
+
+    setSelectedDate(null);
   }
 
   function goToNextMonth() {
@@ -70,10 +95,23 @@ function CalendarSection({
         1
       );
     });
+
+    setSelectedDate(null);
   }
 
   function goToCurrentMonth() {
-    setVisibleMonthDate(new Date());
+    const today = new Date();
+
+    setVisibleMonthDate(today);
+    setSelectedDate(today);
+  }
+
+  function handleSelectDate(date: Date) {
+    setSelectedDate(date);
+  }
+
+  function clearSelectedDate() {
+    setSelectedDate(null);
   }
 
   return (
@@ -132,29 +170,53 @@ function CalendarSection({
             key={item.date.toISOString()}
             day={item.day}
             muted={item.muted}
-            selected={item.isToday}
+            selected={selectedDate ? isSameDate(item.date, selectedDate) : false}
+            isToday={item.isToday}
             dot={item.hasEvent ? item.dot : undefined}
+            onSelect={() => handleSelectDate(item.date)}
           />
         ))}
       </div>
 
+      {selectedDateLabel && (
+        <div className="mt-5 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
+          Mostrando eventos de{" "}
+          <span className="capitalize">{selectedDateLabel}</span>.
+        </div>
+      )}
+
       <div className="mt-9">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold">Próximos eventos</h3>
+            <h3 className="text-lg font-bold">
+              {selectedDate ? "Eventos do dia" : "Próximos eventos"}
+            </h3>
+
             <p className="mt-1 text-sm text-slate-400">
-              Eventos que ainda vão acontecer.
+              {selectedDate
+                ? "Compromissos cadastrados para a data selecionada."
+                : "Eventos que ainda vão acontecer."}
             </p>
           </div>
 
-          <button
-            type="button"
-            disabled
-            className="cursor-not-allowed text-sm font-semibold text-slate-300"
-            title="Essa função ainda será adicionada."
-          >
-            Ver todos
-          </button>
+          {selectedDate ? (
+            <button
+              type="button"
+              onClick={clearSelectedDate}
+              className="text-sm font-semibold text-indigo-600 transition hover:text-indigo-500"
+            >
+              Limpar filtro
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed text-sm font-semibold text-slate-300"
+              title="Essa função ainda será adicionada."
+            >
+              Ver todos
+            </button>
+          )}
         </div>
 
         {isEventsLoading && (
@@ -171,17 +233,19 @@ function CalendarSection({
 
         {!isEventsLoading &&
           !eventsErrorMessage &&
-          upcomingEvents.length === 0 && (
+          displayedUpcomingEvents.length === 0 && (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
-              Nenhum próximo evento cadastrado.
+              {selectedDate
+                ? "Nenhum evento futuro nesta data."
+                : "Nenhum próximo evento cadastrado."}
             </div>
           )}
 
         {!isEventsLoading &&
           !eventsErrorMessage &&
-          upcomingEvents.length > 0 && (
+          displayedUpcomingEvents.length > 0 && (
             <div className="space-y-3">
-              {upcomingEvents.map((event, index) => (
+              {displayedUpcomingEvents.map((event, index) => (
                 <EventCard
                   key={event.id}
                   title={event.title}
@@ -201,26 +265,33 @@ function CalendarSection({
       <div className="mt-10">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold">Histórico</h3>
+            <h3 className="text-lg font-bold">
+              {selectedDate ? "Eventos finalizados neste dia" : "Histórico"}
+            </h3>
+
             <p className="mt-1 text-sm text-slate-400">
-              Eventos que já passaram.
+              {selectedDate
+                ? "Eventos desta data que já passaram."
+                : "Eventos que já passaram."}
             </p>
           </div>
         </div>
 
         {!isEventsLoading &&
           !eventsErrorMessage &&
-          pastEvents.length === 0 && (
+          displayedPastEvents.length === 0 && (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
-              Nenhum evento antigo por enquanto.
+              {selectedDate
+                ? "Nenhum evento finalizado nesta data."
+                : "Nenhum evento antigo por enquanto."}
             </div>
           )}
 
         {!isEventsLoading &&
           !eventsErrorMessage &&
-          pastEvents.length > 0 && (
+          displayedPastEvents.length > 0 && (
             <div className="space-y-3">
-              {pastEvents.map((event, index) => (
+              {displayedPastEvents.map((event, index) => (
                 <EventCard
                   key={event.id}
                   title={event.title}
@@ -273,12 +344,16 @@ function CalendarDay({
   day,
   muted,
   selected,
+  isToday,
   dot,
+  onSelect,
 }: {
   day: number;
   muted: boolean;
   selected: boolean;
+  isToday: boolean;
   dot?: CalendarDotColor;
+  onSelect: () => void;
 }) {
   const dotColor: Record<CalendarDotColor, string> = {
     primary: "bg-indigo-600",
@@ -289,12 +364,15 @@ function CalendarDay({
   return (
     <button
       type="button"
+      onClick={onSelect}
       className={`relative flex h-14 items-center justify-center rounded-2xl text-sm font-semibold transition ${
         selected
           ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25"
           : muted
-            ? "cursor-default text-slate-300"
-            : "text-slate-800 hover:bg-slate-50"
+            ? "text-slate-300 hover:bg-slate-50"
+            : isToday
+              ? "border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+              : "text-slate-800 hover:bg-slate-50"
       }`}
     >
       {day}
@@ -363,6 +441,29 @@ function isSameDate(firstDate: Date, secondDate: Date) {
     firstDate.getMonth() === secondDate.getMonth() &&
     firstDate.getDate() === secondDate.getDate()
   );
+}
+
+function isPastEventByDate(event: LifeHubEvent) {
+  const eventDateTime = new Date(
+    `${event.event_date}T${formatTime(event.end_time ?? event.start_time)}`
+  );
+
+  return eventDateTime.getTime() < new Date().getTime();
+}
+
+function sortEventsByDateAscending(
+  firstEvent: LifeHubEvent,
+  secondEvent: LifeHubEvent
+) {
+  const firstDate = new Date(
+    `${firstEvent.event_date}T${formatTime(firstEvent.start_time)}`
+  );
+
+  const secondDate = new Date(
+    `${secondEvent.event_date}T${formatTime(secondEvent.start_time)}`
+  );
+
+  return firstDate.getTime() - secondDate.getTime();
 }
 
 function formatEventTime(event: LifeHubEvent) {
