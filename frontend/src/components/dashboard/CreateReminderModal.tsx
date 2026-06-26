@@ -13,6 +13,7 @@ type CreateReminderModalProps = {
   selectedReminderValues: number[];
   disabledReminderValues: number[];
   customMinutesBefore: string;
+  maxCustomMinutesBefore: number;
   errorMessage: string;
   successMessage: string;
   isLoading: boolean;
@@ -55,6 +56,7 @@ function CreateReminderModal({
   selectedReminderValues,
   disabledReminderValues,
   customMinutesBefore,
+  maxCustomMinutesBefore,
   errorMessage,
   successMessage,
   isLoading,
@@ -64,6 +66,7 @@ function CreateReminderModal({
   onSubmit,
 }: CreateReminderModalProps) {
   const hasSelectedPreset = selectedReminderValues.length > 0;
+  const isCustomReminderDisabled = isLoading || maxCustomMinutesBefore <= 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-5 backdrop-blur-sm">
@@ -173,19 +176,24 @@ function CreateReminderModal({
             <input
               type="number"
               min="1"
-              max="43200"
+              max={Math.max(maxCustomMinutesBefore, 1)}
               value={customMinutesBefore}
               onChange={(event) =>
                 onCustomMinutesBeforeChange(event.target.value)
               }
-              placeholder="Ex: 30"
-              disabled={isLoading}
+              placeholder={
+                maxCustomMinutesBefore > 0
+                  ? `Ex: 30 — máximo ${maxCustomMinutesBefore}`
+                  : "Evento muito próximo"
+              }
+              disabled={isCustomReminderDisabled}
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:opacity-70"
             />
 
             <p className="mt-2 text-xs text-slate-400">
-              Opcional. Use um valor personalizado caso queira um aviso
-              diferente dos presets.
+              {maxCustomMinutesBefore > 0
+                ? `Opcional. Para este evento, o personalizado deve ser entre 1 e ${maxCustomMinutesBefore} minuto(s) antes.`
+                : "Não há tempo suficiente para criar um lembrete personalizado para este evento."}
             </p>
           </div>
 

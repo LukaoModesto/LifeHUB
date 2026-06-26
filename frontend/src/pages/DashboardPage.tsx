@@ -874,23 +874,26 @@ function DashboardPage() {
 
       {selectedEventForReminder && (
         <CreateReminderModal
-          eventTitle={selectedEventForReminder.title}
-          selectedReminderValues={selectedReminderValues}
-          disabledReminderValues={getDisabledReminderValuesForEvent(
-            selectedEventForReminder
-          )}
-          customMinutesBefore={customReminderMinutesBefore}
-          errorMessage={createReminderErrorMessage}
-          successMessage={createReminderSuccessMessage}
-          isLoading={isCreatingReminder || isLoadingReminderSettings}
-          onTogglePreset={handleToggleReminderPreset}
-          onCustomMinutesBeforeChange={setCustomReminderMinutesBefore}
-          onClose={closeReminderModal}
-          onSubmit={handleCreateReminder}
+        eventTitle={selectedEventForReminder.title}
+        selectedReminderValues={selectedReminderValues}
+        disabledReminderValues={getDisabledReminderValuesForEvent(
+          selectedEventForReminder
+        )}
+        customMinutesBefore={customReminderMinutesBefore}
+        maxCustomMinutesBefore={getMaxCustomReminderMinutesBeforeForEvent(
+          selectedEventForReminder
+        )}
+        errorMessage={createReminderErrorMessage}
+        successMessage={createReminderSuccessMessage}
+        isLoading={isCreatingReminder || isLoadingReminderSettings}
+        onTogglePreset={handleToggleReminderPreset}
+        onCustomMinutesBeforeChange={setCustomReminderMinutesBefore}
+        onClose={closeReminderModal}
+        onSubmit={handleCreateReminder}
         />
       )}
-
-      {selectedEventForDelete && (
+        
+        {selectedEventForDelete && (
         <DeleteEventModal
           eventTitle={selectedEventForDelete.title}
           errorMessage={deleteEventErrorMessage}
@@ -1096,6 +1099,19 @@ function formatReminderValue(minutesBefore: number) {
   }
 
   return `${minutesBefore} minutos antes`;
+}
+
+function getMaxCustomReminderMinutesBeforeForEvent(event: LifeHubEvent) {
+  const eventStartDateTime = buildEventDateTime(
+    event.event_date,
+    formatTime(event.start_time)
+  );
+
+  const minutesUntilEvent = Math.floor(
+    (eventStartDateTime.getTime() - Date.now()) / 60000
+  );
+
+  return Math.min(Math.max(minutesUntilEvent - 1, 0), 43200);
 }
 
 export default DashboardPage;
