@@ -1,7 +1,7 @@
-from app.main import app
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.config import settings
 from app.database import Base, engine
 
 from app.models.user_model import User
@@ -23,16 +23,13 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="LifeHUB API",
     description="API do aplicativo LifeHUB - agenda, metas e produtividade.",
-    version="0.1.0"
+    version="0.1.0",
 )
 
-# Permite que o frontend React acesse o backend FastAPI
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,13 +49,12 @@ def home():
     return {
         "message": "LifeHUB API online",
         "status": "running",
-        "version": "0.1.0"
+        "version": "0.1.0",
     }
 
 
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok"
+        "status": "ok",
     }
-
