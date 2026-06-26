@@ -611,6 +611,26 @@ function DashboardPage() {
     navigate("/login");
   }
 
+  function openCreateEventModal(eventDate = "") {
+  setNewEventTitle("");
+  setNewEventDescription("");
+  setNewEventDate(eventDate);
+  setNewEventStartTime("");
+  setNewEventEndTime("");
+  setCreateEventErrorMessage("");
+  setIsCreateEventModalOpen(true);
+}
+
+function closeCreateEventModal() {
+  setIsCreateEventModalOpen(false);
+  setNewEventTitle("");
+  setNewEventDescription("");
+  setNewEventDate("");
+  setNewEventStartTime("");
+  setNewEventEndTime("");
+  setCreateEventErrorMessage("");
+}
+
   const userName = user?.name ?? "Usuário";
   const userEmail = user?.email ?? "Conta LifeHUB";
   const userInitials = getUserInitials(userName);
@@ -630,7 +650,7 @@ function DashboardPage() {
   return (
     <main className="min-h-screen bg-[#f8fafc] text-slate-900">
       <div className="flex min-h-screen">
-        <Sidebar onCreateEvent={() => setIsCreateEventModalOpen(true)} />
+        <Sidebar onCreateEvent={() => openCreateEventModal()} />
 
         <section className="flex-1">
           <Topbar
@@ -639,7 +659,7 @@ function DashboardPage() {
             userInitials={userInitials}
             isUserLoading={isUserLoading}
             dueRemindersCount={dueReminders.length}
-            onCreateEvent={() => setIsCreateEventModalOpen(true)}
+            onCreateEvent={() => openCreateEventModal()}
             onLogout={handleLogout}
           />
 
@@ -650,6 +670,7 @@ function DashboardPage() {
             eventReminderCounts={eventReminderCounts}
             isEventsLoading={isEventsLoading}
             eventsErrorMessage={eventsErrorMessage}
+            onCreateEventForDate={openCreateEventModal}
             onCreateReminder={openReminderModal}
             onEditEvent={openEditEventModal}
             onDeleteEvent={openDeleteEventModal}
@@ -689,7 +710,7 @@ function DashboardPage() {
           onEventDateChange={setNewEventDate}
           onStartTimeChange={setNewEventStartTime}
           onEndTimeChange={setNewEventEndTime}
-          onClose={() => setIsCreateEventModalOpen(false)}
+          onClose={closeCreateEventModal}
           onSubmit={handleCreateEvent}
         />
       )}
