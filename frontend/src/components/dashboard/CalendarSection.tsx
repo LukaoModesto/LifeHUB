@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -7,16 +8,17 @@ import type { LifeHubEvent } from "../../services/eventService";
 type CalendarDotColor = "primary" | "success" | "danger";
 
 type CalendarDayItem = {
+  date: Date;
   day: number;
-  muted?: boolean;
-  selected?: boolean;
+  muted: boolean;
+  isToday: boolean;
+  hasEvent: boolean;
   dot?: CalendarDotColor;
 };
 
 type EventCardColor = "primary" | "success" | "danger";
 
 type CalendarSectionProps = {
-  calendarDays: CalendarDayItem[];
   upcomingEvents: LifeHubEvent[];
   pastEvents: LifeHubEvent[];
   eventReminderCounts: Record<number, number>;
@@ -28,7 +30,6 @@ type CalendarSectionProps = {
 };
 
 function CalendarSection({
-  calendarDays,
   upcomingEvents,
   pastEvents,
   eventReminderCounts,
@@ -38,6 +39,43 @@ function CalendarSection({
   onEditEvent,
   onDeleteEvent,
 }: CalendarSectionProps) {
+  const [visibleMonthDate, setVisibleMonthDate] = useState(() => new Date());
+
+  const allEvents = [...upcomingEvents, ...pastEvents];
+
+  const calendarDays = useMemo(() => {
+    return buildCalendarDays(visibleMonthDate, allEvents);
+  }, [visibleMonthDate, allEvents]);
+
+  const monthLabel = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric",
+  }).format(visibleMonthDate);
+
+  function goToPreviousMonth() {
+    setVisibleMonthDate((currentDate) => {
+      return new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() - 1,
+        1
+      );
+    });
+  }
+
+  function goToNextMonth() {
+    setVisibleMonthDate((currentDate) => {
+      return new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        1
+      );
+    });
+  }
+
+  function goToCurrentMonth() {
+    setVisibleMonthDate(new Date());
+  }
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 14 }}
@@ -47,22 +85,35 @@ function CalendarSection({
     >
       <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <button className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100">
+          <button
+            type="button"
+            onClick={goToPreviousMonth}
+            className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+          >
             <ChevronLeft size={20} />
           </button>
 
-          <h2 className="text-2xl font-bold tracking-tight">Agenda</h2>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Agenda</h2>
+            <p className="mt-1 text-sm font-medium capitalize text-slate-400">
+              {monthLabel}
+            </p>
+          </div>
 
-          <button className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100">
+          <button
+            type="button"
+            onClick={goToNextMonth}
+            className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+          >
             <ChevronRight size={20} />
           </button>
         </div>
 
         <div className="flex w-fit rounded-2xl border border-slate-200 bg-slate-50 p-1">
-          <ViewButton label="Hoje" />
+          <ViewButton label="Hoje" onClick={goToCurrentMonth} />
           <ViewButton label="Mês" active />
-          <ViewButton label="Semana" />
-          <ViewButton label="Dia" />
+          <ViewButton label="Semana" disabled />
+          <ViewButton label="Dia" disabled />
         </div>
       </div>
 
@@ -76,13 +127,13 @@ function CalendarSection({
           </div>
         ))}
 
-        {calendarDays.map((item, index) => (
+        {calendarDays.map((item) => (
           <CalendarDay
-            key={`${item.day}-${index}`}
+            key={item.date.toISOString()}
             day={item.day}
             muted={item.muted}
-            selected={item.selected}
-            dot={item.dot}
+            selected={item.isToday}
+            dot={item.hasEvent ? item.dot : undefined}
           />
         ))}
       </div>
@@ -96,7 +147,12 @@ function CalendarSection({
             </p>
           </div>
 
-          <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-500">
+          <button
+            type="button"
+            disabled
+            className="cursor-not-allowed text-sm font-semibold text-slate-300"
+            title="Essa função ainda será adicionada."
+          >
             Ver todos
           </button>
         </div>
@@ -184,13 +240,28 @@ function CalendarSection({
   );
 }
 
-function ViewButton({ label, active }: { label: string; active?: boolean }) {
+function ViewButton({
+  label,
+  active,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  active?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
   return (
     <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
       className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
         active
           ? "bg-indigo-600 text-white shadow-sm"
-          : "text-slate-500 hover:bg-white hover:text-slate-900"
+          : disabled
+            ? "cursor-not-allowed text-slate-300"
+            : "text-slate-500 hover:bg-white hover:text-slate-900"
       }`}
     >
       {label}
@@ -205,8 +276,8 @@ function CalendarDay({
   dot,
 }: {
   day: number;
-  muted?: boolean;
-  selected?: boolean;
+  muted: boolean;
+  selected: boolean;
   dot?: CalendarDotColor;
 }) {
   const dotColor: Record<CalendarDotColor, string> = {
@@ -217,12 +288,13 @@ function CalendarDay({
 
   return (
     <button
-      className={`relative flex h-14 items-center justify-center rounded-2xl text-sm font-semibold transition hover:bg-slate-50 ${
+      type="button"
+      className={`relative flex h-14 items-center justify-center rounded-2xl text-sm font-semibold transition ${
         selected
-          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-600"
+          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25"
           : muted
-            ? "text-slate-300"
-            : "text-slate-800"
+            ? "cursor-default text-slate-300"
+            : "text-slate-800 hover:bg-slate-50"
       }`}
     >
       {day}
@@ -232,7 +304,64 @@ function CalendarDay({
           className={`absolute bottom-2 h-1.5 w-1.5 rounded-full ${dotColor[dot]}`}
         />
       )}
+
+      {dot && selected && (
+        <span className="absolute bottom-2 h-1.5 w-1.5 rounded-full bg-white" />
+      )}
     </button>
+  );
+}
+
+function buildCalendarDays(
+  visibleMonthDate: Date,
+  events: LifeHubEvent[]
+): CalendarDayItem[] {
+  const year = visibleMonthDate.getFullYear();
+  const month = visibleMonthDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const firstCalendarDate = new Date(firstDayOfMonth);
+
+  firstCalendarDate.setDate(
+    firstCalendarDate.getDate() - firstCalendarDate.getDay()
+  );
+
+  const today = new Date();
+  const calendarDays: CalendarDayItem[] = [];
+
+  for (let index = 0; index < 42; index++) {
+    const currentDate = new Date(firstCalendarDate);
+
+    currentDate.setDate(firstCalendarDate.getDate() + index);
+
+    const hasEvent = events.some((event) =>
+      isSameDate(parseEventDate(event.event_date), currentDate)
+    );
+
+    calendarDays.push({
+      date: currentDate,
+      day: currentDate.getDate(),
+      muted: currentDate.getMonth() !== month,
+      isToday: isSameDate(currentDate, today),
+      hasEvent,
+      dot: getDotColorByDay(currentDate.getDate()),
+    });
+  }
+
+  return calendarDays;
+}
+
+function parseEventDate(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+
+  return new Date(year, month - 1, day);
+}
+
+function isSameDate(firstDate: Date, secondDate: Date) {
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
   );
 }
 
@@ -262,6 +391,12 @@ function getEventCardColor(index: number): EventCardColor {
   const colors: EventCardColor[] = ["primary", "success", "danger"];
 
   return colors[index % colors.length];
+}
+
+function getDotColorByDay(day: number): CalendarDotColor {
+  const colors: CalendarDotColor[] = ["primary", "success", "danger"];
+
+  return colors[day % colors.length];
 }
 
 export default CalendarSection;

@@ -50,61 +50,7 @@ type User = {
   email: string;
 };
 
-type CalendarDotColor = "primary" | "success" | "danger";
-
-type CalendarDayItem = {
-  day: number;
-  muted?: boolean;
-  selected?: boolean;
-  dot?: CalendarDotColor;
-};
-
 const defaultReminderValues = [1440, 720, 360, 60, 15];
-
-const calendarDays: CalendarDayItem[] = [
-  { day: 26, muted: true },
-  { day: 27, muted: true },
-  { day: 28, muted: true },
-  { day: 29, muted: true },
-  { day: 30, muted: true },
-  { day: 31, muted: true },
-  { day: 1 },
-  { day: 2 },
-  { day: 3 },
-  { day: 4 },
-  { day: 5 },
-  { day: 6 },
-  { day: 7 },
-  { day: 8 },
-  { day: 9 },
-  { day: 10 },
-  { day: 11 },
-  { day: 12, selected: true },
-  { day: 13 },
-  { day: 14 },
-  { day: 15 },
-  { day: 16 },
-  { day: 17 },
-  { day: 18 },
-  { day: 19 },
-  { day: 20, dot: "primary" },
-  { day: 21 },
-  { day: 22 },
-  { day: 23, dot: "danger" },
-  { day: 24 },
-  { day: 25, dot: "success" },
-  { day: 26 },
-  { day: 27 },
-  { day: 28 },
-  { day: 29 },
-  { day: 30 },
-  { day: 1, muted: true },
-  { day: 2, muted: true },
-  { day: 3, muted: true },
-  { day: 4, muted: true },
-  { day: 5, muted: true },
-  { day: 6, muted: true },
-];
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -699,15 +645,14 @@ function DashboardPage() {
 
           <div className="grid gap-6 p-5 lg:p-8 2xl:grid-cols-[1fr_420px]">
             <CalendarSection
-              calendarDays={calendarDays}
-              upcomingEvents={upcomingEvents}
-              pastEvents={pastEvents}
-              eventReminderCounts={eventReminderCounts}
-              isEventsLoading={isEventsLoading}
-              eventsErrorMessage={eventsErrorMessage}
-              onCreateReminder={openReminderModal}
-              onEditEvent={openEditEventModal}
-              onDeleteEvent={openDeleteEventModal}
+            upcomingEvents={upcomingEvents}
+            pastEvents={pastEvents}
+            eventReminderCounts={eventReminderCounts}
+            isEventsLoading={isEventsLoading}
+            eventsErrorMessage={eventsErrorMessage}
+            onCreateReminder={openReminderModal}
+            onEditEvent={openEditEventModal}
+            onDeleteEvent={openDeleteEventModal}
             />
 
             <aside className="space-y-6">
