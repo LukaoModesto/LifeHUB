@@ -38,29 +38,29 @@ function Sidebar({
         <button
           type="button"
           onClick={onCloseSidebar}
-          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm xl:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] xl:hidden"
           aria-label="Fechar menu"
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white px-5 py-6 shadow-2xl shadow-slate-900/10 transition-transform duration-300 xl:sticky xl:top-0 xl:z-20 xl:h-screen xl:translate-x-0 xl:shadow-none ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[86vw] max-w-[21rem] flex-col overflow-y-auto border-r border-slate-200 bg-white px-5 py-5 shadow-2xl shadow-slate-900/15 transition-transform duration-300 sm:w-80 xl:sticky xl:top-0 xl:z-20 xl:h-screen xl:w-72 xl:translate-x-0 xl:overflow-y-visible xl:py-6 xl:shadow-none ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="mb-8 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-lg font-black text-white shadow-lg shadow-indigo-600/25">
-              LH
+        <div className="mb-7 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/25">
+              <CalendarDays size={25} />
             </div>
 
-            <div>
-              <h1 className="text-xl font-black tracking-tight text-slate-900">
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-black tracking-tight text-slate-900">
                 LifeHUB
               </h1>
 
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Calendar MVP
+              <p className="truncate text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Oi besta :v
               </p>
             </div>
           </div>
@@ -68,7 +68,7 @@ function Sidebar({
           <button
             type="button"
             onClick={onCloseSidebar}
-            className="rounded-2xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 xl:hidden"
+            className="shrink-0 rounded-2xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 xl:hidden"
             aria-label="Fechar menu"
           >
             <X size={21} />
@@ -78,7 +78,7 @@ function Sidebar({
         <button
           type="button"
           onClick={onCreateEvent}
-          className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
+          className="mb-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 active:scale-[0.99]"
         >
           <CalendarPlus size={18} />
           Novo evento
@@ -121,7 +121,7 @@ function Sidebar({
           />
         </nav>
 
-        <div className="mt-auto rounded-3xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-4 xl:mt-auto">
           <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-700">
             <Settings size={17} />
             Próximas features
@@ -155,7 +155,7 @@ function SidebarItem({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${
+      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition active:scale-[0.99] ${
         active
           ? "bg-indigo-50 text-indigo-600"
           : disabled
