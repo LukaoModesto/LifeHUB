@@ -1,19 +1,23 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class ReminderCreate(BaseModel):
     minutes_before: int = Field(
         gt=0,
-        le=43200
+        le=43200,
+        description="Quantidade de minutos antes do evento.",
     )
+
 
 class ReminderResponse(BaseModel):
     id: int
     event_id: int
     minutes_before: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
 
 class DueReminderResponse(BaseModel):
     reminder_id: int
