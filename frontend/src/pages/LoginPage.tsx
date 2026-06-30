@@ -82,8 +82,8 @@ function LoginPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[#f8fafc] text-slate-900">
-      <div className="grid min-h-[100dvh] lg:grid-cols-[1.05fr_0.95fr]">
+    <main className="min-h-[100svh] overflow-x-hidden bg-[#f8fafc] text-slate-900">
+      <div className="grid min-h-[100svh] lg:grid-cols-[1.05fr_0.95fr]">
         <section className="relative hidden overflow-hidden bg-slate-950 px-10 py-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="absolute left-[-10%] top-[-15%] h-80 w-80 rounded-full bg-indigo-500/30 blur-3xl" />
           <div className="absolute bottom-[-15%] right-[-10%] h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl" />
@@ -95,7 +95,9 @@ function LoginPage() {
 
             <div>
               <h1 className="text-xl font-bold tracking-tight">LifeHUB</h1>
-              <p className="text-sm text-slate-300">Agenda pessoal</p>
+              <p className="text-sm text-slate-300">
+                Agenda pessoal inteligente
+              </p>
             </div>
           </div>
 
@@ -125,8 +127,8 @@ function LoginPage() {
               transition={{ duration: 0.45, delay: 0.16 }}
               className="mt-6 max-w-lg text-lg leading-8 text-slate-300"
             >
-              Organize compromissos, configure lembretes e acompanhe seus avisos
-              importantes em uma interface simples e responsiva.
+              Organize compromissos, acompanhe sua agenda e receba avisos
+              importantes diretamente pelo painel.
             </motion.p>
 
             <div className="mt-10 grid gap-4">
@@ -147,7 +149,7 @@ function LoginPage() {
               <UpdateCard
                 icon={<ShieldCheck size={20} />}
                 title="Autenticação protegida"
-                description="Login comum, Google Login, dashboard protegido e logout."
+                description="Login tradicional, Google Login e rotas protegidas."
                 color="success"
               />
             </div>
@@ -170,31 +172,35 @@ function LoginPage() {
           </div>
         </section>
 
-        <section className="flex min-h-[100dvh] items-center justify-center px-4 py-6 sm:px-5 sm:py-8 lg:px-8">
+        <section className="flex min-h-[100svh] items-start justify-center px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:py-10 lg:items-center lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
             className="w-full max-w-md sm:max-w-lg lg:max-w-md"
           >
-            <div className="mb-6 flex items-center gap-3 lg:hidden">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
-                <CalendarDays size={27} />
+            <div className="mb-7 flex items-center gap-3 sm:mb-8 lg:hidden">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 sm:h-16 sm:w-16">
+                <CalendarDays size={28} />
               </div>
 
               <div>
-                <h1 className="text-2xl font-black tracking-tight">LifeHUB</h1>
-                <p className="text-base text-slate-500">Agenda pessoal</p>
+                <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+                  LifeHUB
+                </h1>
+                <p className="text-base text-slate-500 sm:text-lg">
+                  Agenda pessoal
+                </p>
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/70 sm:rounded-[2rem] sm:p-7 lg:p-8">
-              <div className="mb-6 sm:mb-7">
+            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/70 sm:rounded-[2rem] sm:p-8">
+              <div className="mb-6 sm:mb-8">
                 <p className="text-sm font-semibold text-indigo-600 sm:text-base">
                   Bem-vindo de volta
                 </p>
 
-                <h2 className="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+                <h2 className="mt-2 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
                   Entrar na sua conta
                 </h2>
 
@@ -203,22 +209,24 @@ function LoginPage() {
                 </p>
               </div>
 
-              <div className="mb-5 flex justify-center overflow-hidden rounded-full">
-                <GoogleLogin
-                  onSuccess={(credentialResponse) => {
-                    handleGoogleSuccess(credentialResponse.credential);
-                  }}
-                  onError={() => {
-                    setErrorMessage("Não foi possível entrar com Google.");
-                  }}
-                  useOneTap={false}
-                  text="continue_with"
-                  shape="pill"
-                  width="100%"
-                />
+              <div className="mb-5 flex justify-center sm:mb-6">
+                <div className="w-full max-w-[340px] overflow-hidden rounded-full">
+                  <GoogleLogin
+                    onSuccess={(credentialResponse) => {
+                      handleGoogleSuccess(credentialResponse.credential);
+                    }}
+                    onError={() => {
+                      setErrorMessage("Não foi possível entrar com Google.");
+                    }}
+                    useOneTap={false}
+                    text="continue_with"
+                    shape="pill"
+                    width={340}
+                  />
+                </div>
               </div>
 
-              <div className="mb-5 flex items-center gap-3">
+              <div className="mb-5 flex items-center gap-3 sm:mb-6">
                 <div className="h-px flex-1 bg-slate-200" />
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   ou
@@ -232,8 +240,8 @@ function LoginPage() {
                     E-mail
                   </label>
 
-                  <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 sm:h-14">
-                    <Mail size={18} className="text-slate-400" />
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 sm:py-3.5">
+                    <Mail size={18} className="shrink-0 text-slate-400" />
 
                     <input
                       type="email"
@@ -251,8 +259,8 @@ function LoginPage() {
                     Senha
                   </label>
 
-                  <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 sm:h-14">
-                    <Lock size={18} className="text-slate-400" />
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 sm:py-3.5">
+                    <Lock size={18} className="shrink-0 text-slate-400" />
 
                     <input
                       type="password"
@@ -288,7 +296,7 @@ function LoginPage() {
 
                   <button
                     type="button"
-                    className="text-left font-semibold text-indigo-600 transition hover:text-indigo-500"
+                    className="w-fit font-semibold text-indigo-600 transition hover:text-indigo-500"
                   >
                     Esqueci minha senha
                   </button>
@@ -297,7 +305,7 @@ function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70 sm:h-14 sm:text-base"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 sm:py-4 sm:text-base"
                 >
                   {isLoading ? "Entrando..." : "Entrar"}
 
@@ -305,7 +313,7 @@ function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-5 text-center text-sm text-slate-500 sm:text-base">
+              <div className="mt-5 text-center text-sm text-slate-500 sm:mt-6">
                 Ainda não tenho conta{" "}
                 <Link
                   to="/register"

@@ -19,3 +19,15 @@ body {
     radial-gradient(circle at bottom right, rgba(147, 51, 234, 0.16), transparent 30%),
     #020617;
 }
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+  background: #f8fafc;
+}
+
+body {
+  overflow-x: hidden;
+}
