@@ -9,6 +9,7 @@ from app.schemas.push_subscription_schema import (
     PushSubscriptionCreateRequest,
     PushSubscriptionResponse,
 )
+from app.services.push_notification_service import send_push_notification
 
 router = APIRouter(
     prefix="/push-subscriptions",
@@ -50,6 +51,48 @@ def create_or_update_push_subscription(
     db.refresh(push_subscription)
 
     return push_subscription
+
+
+@router.post("/test")
+def test_push_notification(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    subscriptions = (
+        db.query(PushSubscription)
+        .filter(PushSubscription.user_id == current_user.id)
+        .all()
+    )
+
+    if not subscriptions:
+        return {
+            "message": "Nenhuma inscrição push encontrada para este usuário.",
+            "sent": 0,
+            "failed": 0,
+        }
+
+    sent_count = 0
+    failed_count = 0
+
+    for subscription in subscriptions:
+        was_sent = send_push_notification(
+            subscription=subscription,
+            title="Teste do LifeHUB",
+            body="Se você recebeu isso, o push está funcionando.",
+            url="/dashboard",
+            tag="lifehub-test-push",
+        )
+
+        if was_sent:
+            sent_count += 1
+        else:
+            failed_count += 1
+
+    return {
+        "message": "Teste de push finalizado.",
+        "sent": sent_count,
+        "failed": failed_count,
+    }
 
 
 @router.delete("/{subscription_id}")

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -47,6 +48,19 @@ def google_login(
     db: Session = Depends(get_db),
 ):
     return authenticate_google_user(db, google_login_data)
+
+
+@router.post("/token", response_model=TokenResponse)
+def login_for_swagger(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    login_data = UserLogin(
+        email=form_data.username,
+        password=form_data.password,
+    )
+
+    return authenticate_user(db, login_data)
 
 
 @router.get("/me", response_model=UserResponse)
