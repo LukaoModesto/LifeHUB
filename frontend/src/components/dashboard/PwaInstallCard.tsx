@@ -116,7 +116,7 @@ function PwaInstallCard() {
     setIsActivatingNotifications(false);
   }
 
-  const notificationsEnabled = notificationPermission === "granted";
+  const notificationsPermissionGranted = notificationPermission === "granted";
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -189,19 +189,19 @@ function PwaInstallCard() {
         <button
           type="button"
           onClick={handleActivateNotifications}
-          disabled={isActivatingNotifications || notificationsEnabled}
+          disabled={isActivatingNotifications}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isActivatingNotifications ? (
             <Loader2 size={18} className="animate-spin" />
-          ) : notificationsEnabled ? (
+          ) : notificationsPermissionGranted ? (
             <CheckCircle2 size={18} />
           ) : (
             <BellRing size={18} />
           )}
 
-          {notificationsEnabled
-            ? "Notificações ativadas"
+          {notificationsPermissionGranted
+            ? "Registrar notificações neste dispositivo"
             : "Ativar notificações"}
         </button>
 
