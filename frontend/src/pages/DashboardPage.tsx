@@ -10,6 +10,7 @@ import CreateReminderModal from "../components/dashboard/CreateReminderModal";
 import NotificationPanel from "../components/dashboard/NotificationPanel";
 import SummaryPanel from "../components/dashboard/SummaryPanel";
 import CalendarSection from "../components/dashboard/CalendarSection";
+import PwaInstallCard from "../components/dashboard/PwaInstallCard";
 import {
   getBrowserNotificationPermission,
   requestBrowserNotificationPermission,
@@ -145,7 +146,7 @@ function DashboardPage() {
 
   const playedReminderIdsRef = useRef<Set<number>>(new Set());
 
-  const dashboardRef = useRef<HTMLDivElement | null>(null);
+  const dashboardRef = useRef<HTMLElement | null>(null);
   const calendarRef = useRef<HTMLDivElement | null>(null);
   const remindersRef = useRef<HTMLDivElement | null>(null);
 
@@ -806,7 +807,6 @@ function DashboardPage() {
                 onCreateReminder={openReminderModal}
                 onEditEvent={openEditEventModal}
                 onDeleteEvent={openDeleteEventModal}
-                
               />
             </div>
 
@@ -830,6 +830,8 @@ function DashboardPage() {
                 pastEventsCount={pastEvents.length}
                 alertRemindersCount={alertRemindersCount}
               />
+
+              <PwaInstallCard />
             </aside>
           </div>
         </section>
