@@ -3,9 +3,15 @@ import {
   BellRing,
   CheckCircle2,
   Download,
+  Loader2,
   Share2,
   Smartphone,
 } from "lucide-react";
+
+import {
+  getPushNotificationPermission,
+  requestAndSavePushSubscription,
+} from "../../services/pushNotificationService";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -25,6 +31,11 @@ function PwaInstallCard() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIosDevice, setIsIosDevice] = useState(false);
   const [message, setMessage] = useState("");
+  const [notificationPermission, setNotificationPermission] = useState(() =>
+    getPushNotificationPermission()
+  );
+  const [isActivatingNotifications, setIsActivatingNotifications] =
+    useState(false);
 
   useEffect(() => {
     function checkInstallStatus() {
@@ -94,27 +105,18 @@ function PwaInstallCard() {
     setInstallPrompt(null);
   }
 
-  if (isInstalled) {
-    return (
-      <section className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-            <CheckCircle2 size={23} />
-          </div>
+  async function handleActivateNotifications() {
+    setMessage("");
+    setIsActivatingNotifications(true);
 
-          <div>
-            <h3 className="text-base font-black text-emerald-900">
-              LifeHUB instalado
-            </h3>
+    const result = await requestAndSavePushSubscription();
 
-            <p className="mt-2 text-sm leading-6 text-emerald-700">
-              O app já está rodando como PWA neste dispositivo.
-            </p>
-          </div>
-        </div>
-      </section>
-    );
+    setNotificationPermission(getPushNotificationPermission());
+    setMessage(result.message);
+    setIsActivatingNotifications(false);
   }
+
+  const notificationsEnabled = notificationPermission === "granted";
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -125,62 +127,99 @@ function PwaInstallCard() {
 
         <div>
           <h3 className="text-base font-black text-slate-900">
-            Instalar LifeHUB
+            LifeHUB no celular
           </h3>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Adicione o LifeHUB à tela inicial para acessar como aplicativo.
+            Instale o LifeHUB na tela inicial e ative notificações para este
+            dispositivo.
           </p>
         </div>
       </div>
 
-      {installPrompt && (
+      <div className="space-y-3">
+        {isInstalled ? (
+          <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <CheckCircle2
+              size={18}
+              className="mt-0.5 shrink-0 text-emerald-600"
+            />
+
+            <p className="text-sm leading-6 text-emerald-700">
+              LifeHUB já está instalado como PWA neste dispositivo.
+            </p>
+          </div>
+        ) : (
+          <>
+            {installPrompt && (
+              <button
+                type="button"
+                onClick={handleInstallApp}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 active:scale-[0.99]"
+              >
+                <Download size={18} />
+                Instalar app
+              </button>
+            )}
+
+            {isIosDevice && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <Share2 size={17} />
+                  No iPhone
+                </div>
+
+                <ol className="space-y-2 text-sm leading-6 text-slate-500">
+                  <li>1. Abra pelo Safari.</li>
+                  <li>2. Toque no botão de compartilhar.</li>
+                  <li>3. Escolha “Adicionar à Tela de Início”.</li>
+                </ol>
+              </div>
+            )}
+
+            {!installPrompt && !isIosDevice && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500">
+                No Android/Chrome, use o menu do navegador e escolha “Adicionar
+                à tela inicial” ou “Instalar app”.
+              </div>
+            )}
+          </>
+        )}
+
         <button
           type="button"
-          onClick={handleInstallApp}
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 active:scale-[0.99]"
+          onClick={handleActivateNotifications}
+          disabled={isActivatingNotifications || notificationsEnabled}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          <Download size={18} />
-          Instalar app
+          {isActivatingNotifications ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : notificationsEnabled ? (
+            <CheckCircle2 size={18} />
+          ) : (
+            <BellRing size={18} />
+          )}
+
+          {notificationsEnabled
+            ? "Notificações ativadas"
+            : "Ativar notificações"}
         </button>
-      )}
 
-      {isIosDevice && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-700">
-            <Share2 size={17} />
-            No iPhone
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <BellRing size={18} className="mt-0.5 shrink-0 text-amber-600" />
+
+          <p className="text-sm leading-6 text-amber-700">
+            O LifeHUB pode enviar notificações push, mas o volume e o som final
+            dependem das configurações do celular.
+          </p>
+        </div>
+
+        {message && (
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
+            {message}
           </div>
-
-          <ol className="space-y-2 text-sm leading-6 text-slate-500">
-            <li>1. Abra pelo Safari.</li>
-            <li>2. Toque no botão de compartilhar.</li>
-            <li>3. Escolha “Adicionar à Tela de Início”.</li>
-          </ol>
-        </div>
-      )}
-
-      {!installPrompt && !isIosDevice && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500">
-          No Android/Chrome, use o menu do navegador e escolha “Adicionar à tela
-          inicial” ou “Instalar app”.
-        </div>
-      )}
-
-      <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-        <BellRing size={18} className="mt-0.5 shrink-0 text-amber-600" />
-
-        <p className="text-sm leading-6 text-amber-700">
-          Notificações no celular serão melhoradas na próxima etapa. O som de
-          notificações push depende do sistema do aparelho.
-        </p>
+        )}
       </div>
-
-      {message && (
-        <div className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
-          {message}
-        </div>
-      )}
     </section>
   );
 }

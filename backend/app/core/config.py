@@ -15,6 +15,10 @@ class Settings(BaseSettings):
 
     google_client_id: str | None = None
 
+    vapid_private_key: str | None = None
+    vapid_public_key: str | None = None
+    vapid_subject: str = "mailto:your-email@example.com"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
