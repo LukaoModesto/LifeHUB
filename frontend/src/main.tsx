@@ -5,12 +5,15 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 
 import "./index.css";
 import App from "./App.tsx";
+import { registerServiceWorker } from "./services/serviceWorkerService";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 if (!googleClientId) {
   throw new Error("VITE_GOOGLE_CLIENT_ID não foi configurado.");
 }
+
+registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
