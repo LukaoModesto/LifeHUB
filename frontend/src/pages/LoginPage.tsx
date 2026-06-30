@@ -71,16 +71,19 @@ function LoginPage() {
 
       localStorage.setItem("lifehub_token", response.access_token);
       navigate("/dashboard");
-    } catch {
-      setErrorMessage("Não foi possível entrar com Google.");
+    } catch (error: any) {
+      const backendMessage =
+        error?.response?.data?.detail || "Não foi possível entrar com Google.";
+
+      setErrorMessage(backendMessage);
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-slate-900">
-      <div className="grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+    <main className="min-h-[100dvh] bg-[#f8fafc] text-slate-900">
+      <div className="grid min-h-[100dvh] lg:grid-cols-[1.05fr_0.95fr]">
         <section className="relative hidden overflow-hidden bg-slate-950 px-10 py-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="absolute left-[-10%] top-[-15%] h-80 w-80 rounded-full bg-indigo-500/30 blur-3xl" />
           <div className="absolute bottom-[-15%] right-[-10%] h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl" />
@@ -92,9 +95,7 @@ function LoginPage() {
 
             <div>
               <h1 className="text-xl font-bold tracking-tight">LifeHUB</h1>
-              <p className="text-sm text-slate-300">
-                Agenda pessoal inteligente
-              </p>
+              <p className="text-sm text-slate-300">Agenda pessoal</p>
             </div>
           </div>
 
@@ -106,7 +107,7 @@ function LoginPage() {
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-200 backdrop-blur"
             >
               <Sparkles size={16} />
-              Última atualização
+              LifeHUB Alpha
             </motion.div>
 
             <motion.h2
@@ -124,8 +125,8 @@ function LoginPage() {
               transition={{ duration: 0.45, delay: 0.16 }}
               className="mt-6 max-w-lg text-lg leading-8 text-slate-300"
             >
-              O LifeHUB permite criar eventos, adicionar lembretes e acompanhar
-              avisos importantes diretamente pelo painel.
+              Organize compromissos, configure lembretes e acompanhe seus avisos
+              importantes em uma interface simples e responsiva.
             </motion.p>
 
             <div className="mt-10 grid gap-4">
@@ -146,7 +147,7 @@ function LoginPage() {
               <UpdateCard
                 icon={<ShieldCheck size={20} />}
                 title="Autenticação protegida"
-                description="Login, cadastro, dashboard protegido e logout."
+                description="Login comum, Google Login, dashboard protegido e logout."
                 color="success"
               />
             </div>
@@ -169,40 +170,40 @@ function LoginPage() {
           </div>
         </section>
 
-        <section className="flex items-center justify-center px-5 py-10">
+        <section className="flex min-h-[100dvh] items-center justify-center px-4 py-6 sm:px-5 sm:py-8 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            className="w-full max-w-md"
+            className="w-full max-w-md sm:max-w-lg lg:max-w-md"
           >
-            <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
-                <CalendarDays size={25} />
+            <div className="mb-6 flex items-center gap-3 lg:hidden">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+                <CalendarDays size={27} />
               </div>
 
               <div>
-                <h1 className="text-xl font-bold tracking-tight">LifeHUB</h1>
-                <p className="text-sm text-slate-500">Agenda pessoal</p>
+                <h1 className="text-2xl font-black tracking-tight">LifeHUB</h1>
+                <p className="text-base text-slate-500">Agenda pessoal</p>
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70 sm:p-8">
-              <div className="mb-8">
-                <p className="text-sm font-semibold text-indigo-600">
+            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/70 sm:rounded-[2rem] sm:p-7 lg:p-8">
+              <div className="mb-6 sm:mb-7">
+                <p className="text-sm font-semibold text-indigo-600 sm:text-base">
                   Bem-vindo de volta
                 </p>
 
-                <h2 className="mt-2 text-3xl font-black tracking-tight">
+                <h2 className="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
                   Entrar na sua conta
                 </h2>
 
-                <p className="mt-3 text-sm leading-6 text-slate-500">
+                <p className="mt-3 text-sm leading-6 text-slate-500 sm:text-base">
                   Acesse sua agenda, eventos e lembretes.
                 </p>
               </div>
 
-              <div className="mb-6 flex justify-center">
+              <div className="mb-5 flex justify-center overflow-hidden rounded-full">
                 <GoogleLogin
                   onSuccess={(credentialResponse) => {
                     handleGoogleSuccess(credentialResponse.credential);
@@ -213,11 +214,11 @@ function LoginPage() {
                   useOneTap={false}
                   text="continue_with"
                   shape="pill"
-                  width={320}
+                  width="100%"
                 />
               </div>
 
-              <div className="mb-6 flex items-center gap-3">
+              <div className="mb-5 flex items-center gap-3">
                 <div className="h-px flex-1 bg-slate-200" />
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                   ou
@@ -225,13 +226,13 @@ function LoginPage() {
                 <div className="h-px flex-1 bg-slate-200" />
               </div>
 
-              <form onSubmit={handleLogin} className="space-y-5">
+              <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
                     E-mail
                   </label>
 
-                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100">
+                  <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 sm:h-14">
                     <Mail size={18} className="text-slate-400" />
 
                     <input
@@ -240,7 +241,7 @@ function LoginPage() {
                       onChange={(event) => setEmail(event.target.value)}
                       placeholder="seuemail@lifehub.com"
                       disabled={isLoading}
-                      className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+                      className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed sm:text-base"
                     />
                   </div>
                 </div>
@@ -250,7 +251,7 @@ function LoginPage() {
                     Senha
                   </label>
 
-                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100">
+                  <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 sm:h-14">
                     <Lock size={18} className="text-slate-400" />
 
                     <input
@@ -259,7 +260,7 @@ function LoginPage() {
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="Digite sua senha"
                       disabled={isLoading}
-                      className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+                      className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed sm:text-base"
                     />
                   </div>
                 </div>
@@ -276,7 +277,7 @@ function LoginPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between gap-4 text-sm">
+                <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <label className="flex items-center gap-2 text-slate-500">
                     <input
                       type="checkbox"
@@ -287,7 +288,7 @@ function LoginPage() {
 
                   <button
                     type="button"
-                    className="font-semibold text-indigo-600 transition hover:text-indigo-500"
+                    className="text-left font-semibold text-indigo-600 transition hover:text-indigo-500"
                   >
                     Esqueci minha senha
                   </button>
@@ -296,7 +297,7 @@ function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70 sm:h-14 sm:text-base"
                 >
                   {isLoading ? "Entrando..." : "Entrar"}
 
@@ -304,7 +305,7 @@ function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-6 text-center text-sm text-slate-500">
+              <div className="mt-5 text-center text-sm text-slate-500 sm:text-base">
                 Ainda não tenho conta{" "}
                 <Link
                   to="/register"
