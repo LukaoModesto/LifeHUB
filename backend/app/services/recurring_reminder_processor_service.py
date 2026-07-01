@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
@@ -18,16 +18,11 @@ def process_due_recurring_reminders(
     now_local = datetime.now(ZoneInfo(APP_TIMEZONE))
     now_utc = datetime.now(timezone.utc)
 
-    current_weekday = now_local.weekday()
-    current_time = now_local.time()
-
     recurring_reminders = (
         db.query(RecurringReminder)
         .filter(
             RecurringReminder.user_id == user_id,
             RecurringReminder.is_active == True,  # noqa: E712
-            RecurringReminder.weekday == current_weekday,
-            RecurringReminder.reminder_time <= current_time,
         )
         .all()
     )
@@ -38,7 +33,18 @@ def process_due_recurring_reminders(
     skipped_count = 0
 
     for recurring_reminder in recurring_reminders:
-        if was_already_sent_today(recurring_reminder, now_local):
+        notification_datetime = get_due_notification_datetime(
+            recurring_reminder=recurring_reminder,
+            now_local=now_local,
+        )
+
+        if notification_datetime is None:
+            continue
+
+        if was_already_sent_for_notification_day(
+            recurring_reminder=recurring_reminder,
+            notification_datetime=notification_datetime,
+        ):
             skipped_count += 1
             continue
 
@@ -87,9 +93,53 @@ def process_due_recurring_reminders(
     }
 
 
-def was_already_sent_today(
+def get_due_notification_datetime(
     recurring_reminder: RecurringReminder,
     now_local: datetime,
+):
+    candidate_event_dates = get_candidate_event_dates(
+        today=now_local.date(),
+        weekday=recurring_reminder.weekday,
+    )
+
+    for event_date in candidate_event_dates:
+        event_datetime = datetime.combine(
+            event_date,
+            recurring_reminder.event_time,
+            tzinfo=ZoneInfo(APP_TIMEZONE),
+        )
+
+        notification_datetime = event_datetime - timedelta(
+            minutes=recurring_reminder.minutes_before
+        )
+
+        if notification_datetime.date() != now_local.date():
+            continue
+
+        if notification_datetime > now_local:
+            continue
+
+        return notification_datetime
+
+    return None
+
+
+def get_candidate_event_dates(
+    today: date,
+    weekday: int,
+):
+    current_week_monday = today - timedelta(days=today.weekday())
+
+    return [
+        current_week_monday - timedelta(days=7) + timedelta(days=weekday),
+        current_week_monday + timedelta(days=weekday),
+        current_week_monday + timedelta(days=7) + timedelta(days=weekday),
+    ]
+
+
+def was_already_sent_for_notification_day(
+    recurring_reminder: RecurringReminder,
+    notification_datetime: datetime,
 ):
     if not recurring_reminder.last_sent_at:
         return False
@@ -101,13 +151,34 @@ def was_already_sent_today(
 
     last_sent_local = last_sent_at.astimezone(ZoneInfo(APP_TIMEZONE))
 
-    return last_sent_local.date() == now_local.date()
+    return last_sent_local.date() == notification_datetime.date()
 
 
 def build_notification_body(recurring_reminder: RecurringReminder):
-    reminder_time = recurring_reminder.reminder_time.strftime("%H:%M")
+    event_time = recurring_reminder.event_time.strftime("%H:%M")
+    reminder_offset = format_minutes_before(recurring_reminder.minutes_before)
 
     if recurring_reminder.description:
-        return f"{recurring_reminder.description} Horário: {reminder_time}."
+        return (
+            f"{recurring_reminder.description} "
+            f"Compromisso às {event_time}. Aviso: {reminder_offset}."
+        )
 
-    return f"Você tem um lembrete recorrente agora. Horário: {reminder_time}."
+    return f"Compromisso às {event_time}. Aviso: {reminder_offset}."
+
+
+def format_minutes_before(minutes_before: int):
+    if minutes_before == 0:
+        return "no horário"
+
+    if minutes_before % 1440 == 0:
+        days = minutes_before // 1440
+
+        return f"{days} {'dia' if days == 1 else 'dias'} antes"
+
+    if minutes_before % 60 == 0:
+        hours = minutes_before // 60
+
+        return f"{hours} {'hora' if hours == 1 else 'horas'} antes"
+
+    return f"{minutes_before} minutos antes"

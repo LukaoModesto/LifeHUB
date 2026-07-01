@@ -11,6 +11,8 @@ import NotificationPanel from "../components/dashboard/NotificationPanel";
 import SummaryPanel from "../components/dashboard/SummaryPanel";
 import CalendarSection from "../components/dashboard/CalendarSection";
 import PwaInstallCard from "../components/dashboard/PwaInstallCard";
+import RecurringRemindersPanel from "../components/dashboard/RecurringRemindersPanel";
+
 import {
   getBrowserNotificationPermission,
   requestBrowserNotificationPermission,
@@ -833,6 +835,8 @@ function DashboardPage() {
               />
 
               <PwaInstallCard />
+
+              <RecurringRemindersPanel />
             </aside>
           </div>
         </section>
@@ -880,26 +884,26 @@ function DashboardPage() {
 
       {selectedEventForReminder && (
         <CreateReminderModal
-        eventTitle={selectedEventForReminder.title}
-        selectedReminderValues={selectedReminderValues}
-        disabledReminderValues={getDisabledReminderValuesForEvent(
-          selectedEventForReminder
-        )}
-        customMinutesBefore={customReminderMinutesBefore}
-        maxCustomMinutesBefore={getMaxCustomReminderMinutesBeforeForEvent(
-          selectedEventForReminder
-        )}
-        errorMessage={createReminderErrorMessage}
-        successMessage={createReminderSuccessMessage}
-        isLoading={isCreatingReminder || isLoadingReminderSettings}
-        onTogglePreset={handleToggleReminderPreset}
-        onCustomMinutesBeforeChange={setCustomReminderMinutesBefore}
-        onClose={closeReminderModal}
-        onSubmit={handleCreateReminder}
+          eventTitle={selectedEventForReminder.title}
+          selectedReminderValues={selectedReminderValues}
+          disabledReminderValues={getDisabledReminderValuesForEvent(
+            selectedEventForReminder
+          )}
+          customMinutesBefore={customReminderMinutesBefore}
+          maxCustomMinutesBefore={getMaxCustomReminderMinutesBeforeForEvent(
+            selectedEventForReminder
+          )}
+          errorMessage={createReminderErrorMessage}
+          successMessage={createReminderSuccessMessage}
+          isLoading={isCreatingReminder || isLoadingReminderSettings}
+          onTogglePreset={handleToggleReminderPreset}
+          onCustomMinutesBeforeChange={setCustomReminderMinutesBefore}
+          onClose={closeReminderModal}
+          onSubmit={handleCreateReminder}
         />
       )}
-        
-        {selectedEventForDelete && (
+
+      {selectedEventForDelete && (
         <DeleteEventModal
           eventTitle={selectedEventForDelete.title}
           errorMessage={deleteEventErrorMessage}
@@ -1022,10 +1026,7 @@ function validateEventForm({
   return "";
 }
 
-function validateReminderTimes(
-  event: LifeHubEvent,
-  reminderValues: number[]
-) {
+function validateReminderTimes(event: LifeHubEvent, reminderValues: number[]) {
   const eventStartDateTime = buildEventDateTime(
     event.event_date,
     formatTime(event.start_time)

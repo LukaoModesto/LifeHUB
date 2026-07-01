@@ -31,7 +31,9 @@ def create_recurring_reminder(
         title=recurring_reminder_data.title,
         description=recurring_reminder_data.description,
         weekday=recurring_reminder_data.weekday,
-        reminder_time=recurring_reminder_data.reminder_time,
+        reminder_time=recurring_reminder_data.event_time,
+        event_time=recurring_reminder_data.event_time,
+        minutes_before=recurring_reminder_data.minutes_before,
         is_active=recurring_reminder_data.is_active,
     )
 
@@ -52,7 +54,7 @@ def list_recurring_reminders(
         .filter(RecurringReminder.user_id == current_user.id)
         .order_by(
             RecurringReminder.weekday.asc(),
-            RecurringReminder.reminder_time.asc(),
+            RecurringReminder.event_time.asc(),
         )
         .all()
     )
@@ -119,6 +121,9 @@ def update_recurring_reminder(
 
     for field, value in update_data.items():
         setattr(recurring_reminder, field, value)
+
+        if field == "event_time":
+            recurring_reminder.reminder_time = value
 
     db.commit()
     db.refresh(recurring_reminder)

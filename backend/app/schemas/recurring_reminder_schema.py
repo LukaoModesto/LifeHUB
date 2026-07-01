@@ -7,7 +7,8 @@ class RecurringReminderBase(BaseModel):
     title: str = Field(min_length=1, max_length=80)
     description: str | None = Field(default=None, max_length=300)
     weekday: int = Field(ge=0, le=6)
-    reminder_time: time
+    event_time: time
+    minutes_before: int = Field(default=0, ge=0, le=43200)
     is_active: bool = True
 
     @field_validator("title")
@@ -39,7 +40,8 @@ class RecurringReminderUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=80)
     description: str | None = Field(default=None, max_length=300)
     weekday: int | None = Field(default=None, ge=0, le=6)
-    reminder_time: time | None = None
+    event_time: time | None = None
+    minutes_before: int | None = Field(default=None, ge=0, le=43200)
     is_active: bool | None = None
 
     @field_validator("title")
@@ -71,7 +73,8 @@ class RecurringReminderResponse(BaseModel):
     title: str
     description: str | None
     weekday: int
-    reminder_time: time
+    event_time: time
+    minutes_before: int
     is_active: bool
     last_sent_at: datetime | None
     created_at: datetime
