@@ -1,7 +1,14 @@
+import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem("lifehub_token");
+import { getAuthToken } from "../services/authTokenStorageService";
+
+type PrivateRouteProps = {
+  children: ReactNode;
+};
+
+function PrivateRoute({ children }: PrivateRouteProps) {
+  const token = getAuthToken();
 
   if (!token) {
     return <Navigate to="/login" replace />;

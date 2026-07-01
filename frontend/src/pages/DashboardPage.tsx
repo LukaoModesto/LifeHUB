@@ -50,6 +50,7 @@ import {
   playNotificationSound,
   unlockNotificationSound,
 } from "../services/notificationSoundService";
+import { clearAuthToken } from "../services/authTokenStorageService";
 
 type User = {
   id: number;
@@ -156,7 +157,7 @@ function DashboardPage() {
         const userResponse = await api.get<User>("/users/me");
         setUser(userResponse.data);
       } catch {
-        localStorage.removeItem("lifehub_token");
+        clearAuthToken();
         navigate("/login");
         return;
       } finally {
@@ -673,7 +674,7 @@ function DashboardPage() {
   }
 
   function handleLogout() {
-    localStorage.removeItem("lifehub_token");
+    clearAuthToken();
     navigate("/login");
   }
 

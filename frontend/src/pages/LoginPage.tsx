@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 
 import { loginUser, loginWithGoogle } from "../services/authService";
+import {
+  getKeepConnectedPreference,
+  saveAuthToken,
+} from "../services/authTokenStorageService";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -21,15 +25,18 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [keepConnected, setKeepConnected] = useState(() =>
+    getKeepConnectedPreference()
+  );
+
   const [errorMessage, setErrorMessage] = useState("");
-  const [infoMessage, setInfoMessage] = useState("");
+  const [infoMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setErrorMessage("");
-    setInfoMessage("");
 
     if (!email.trim() || !password.trim()) {
       setErrorMessage("Informe seu e-mail e senha.");
@@ -44,7 +51,7 @@ function LoginPage() {
         password,
       });
 
-      localStorage.setItem("lifehub_token", response.access_token);
+      saveAuthToken(response.access_token, keepConnected);
       navigate("/dashboard");
     } catch {
       setErrorMessage("E-mail ou senha inválidos.");
@@ -55,7 +62,6 @@ function LoginPage() {
 
   async function handleGoogleSuccess(credential?: string) {
     setErrorMessage("");
-    setInfoMessage("");
 
     if (!credential) {
       setErrorMessage("Não foi possível obter o token do Google.");
@@ -69,7 +75,7 @@ function LoginPage() {
         credential,
       });
 
-      localStorage.setItem("lifehub_token", response.access_token);
+      saveAuthToken(response.access_token, keepConnected);
       navigate("/dashboard");
     } catch (error: any) {
       const backendMessage =
@@ -109,7 +115,7 @@ function LoginPage() {
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-200 backdrop-blur"
             >
               <Sparkles size={16} />
-              LifeHUB Alpha
+              LifeHUB Beta
             </motion.div>
 
             <motion.h2
@@ -289,6 +295,10 @@ function LoginPage() {
                   <label className="flex items-center gap-2 text-slate-500">
                     <input
                       type="checkbox"
+                      checked={keepConnected}
+                      onChange={(event) =>
+                        setKeepConnected(event.target.checked)
+                      }
                       className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     Manter conectado

@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { getAuthToken } from "./authTokenStorageService";
+
 const apiBaseUrl = import.meta.env.VITE_API_URL;
 
 if (!apiBaseUrl) {
@@ -11,7 +13,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("lifehub_token");
+  const token = getAuthToken();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
