@@ -10,6 +10,9 @@ from app.schemas.recurring_reminder_schema import (
     RecurringReminderResponse,
     RecurringReminderUpdate,
 )
+from app.services.recurring_reminder_processor_service import (
+    process_due_recurring_reminders,
+)
 
 router = APIRouter(
     prefix="/recurring-reminders",
@@ -47,8 +50,22 @@ def list_recurring_reminders(
     return (
         db.query(RecurringReminder)
         .filter(RecurringReminder.user_id == current_user.id)
-        .order_by(RecurringReminder.weekday.asc(), RecurringReminder.reminder_time.asc())
+        .order_by(
+            RecurringReminder.weekday.asc(),
+            RecurringReminder.reminder_time.asc(),
+        )
         .all()
+    )
+
+
+@router.post("/process-due")
+def process_due_recurring_reminders_for_current_user(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return process_due_recurring_reminders(
+        db=db,
+        user_id=current_user.id,
     )
 
 
